@@ -1,21 +1,19 @@
 {
   "name": "EduPro - School Management System",
   "short_name": "EduPro",
-  "description": "Complete School Management System for Sunshine Education Complex",
+  "description": "Complete Next-Gen School Management Platform",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#3b82f6",
+  "orientation": "any",
+  "background_color": "#0f0c20",
+  "theme_color": "#3b0764",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/Edupro_icon.jpg",
+      "sizes": "192x192 512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ]
 }
