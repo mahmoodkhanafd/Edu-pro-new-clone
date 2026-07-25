@@ -1,19 +1,27 @@
 {
   "name": "EduPro - School Management System",
   "short_name": "EduPro",
-  "description": "Complete Next-Gen School Management Platform",
+  "description": "Complete School Management System",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "any",
-  "background_color": "#0f0c20",
-  "theme_color": "#3b0764",
+  "background_color": "#f8fafc",
+  "theme_color": "#3b82f6",
   "icons": [
     {
       "src": "/Edupro_icon.jpg",
-      "sizes": "192x192 512x512",
+      "sizes": "1080x1080",
       "type": "image/jpeg",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/Edupro_icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/Edupro_icon.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
     }
   ]
 }
