@@ -6,10 +6,8 @@ import { useStore } from '@/store';
 import {
   Award,
   Printer,
-  Search,
   FileText,
-  GraduationCap,
-  User,
+  Building,
   CheckCircle,
   XCircle,
   FileDown,
@@ -77,21 +75,23 @@ export default function DMCPage() {
   const classData = classes.find(c => c.id === selectedClass);
   const examData = examTypes.find(e => e.id === selectedExam);
 
-  // Calculate totals
+  // Calculate totals & subject grades
   const resultsWithGrades = useMemo(() => {
     return classSubjects.map(subject => {
       const result = studentResults.find(r => r.subjectId === subject.id);
       const marks = result ? Number(result.marksObtained) : 0;
-      const maxMarks = result ? Number(result.maxMarks) : examData?.maxMarks || 100;
+      const maxMarks = result ? Number(result.maxMarks) : (subject.totalMarks || examData?.maxMarks || 100);
+      const passingMarks = result?.passingMarks || subject.passingMarks || examData?.passingMarks || 33;
       const percentage = maxMarks > 0 ? (marks / maxMarks) * 100 : 0;
       const { grade, remarks } = calculateGrade(percentage);
-      const isPassed = percentage >= (examData?.passingMarks || 33);
+      const isPassed = result ? marks >= passingMarks : false;
 
       return {
         subject: subject.name,
         code: subject.code,
         marksObtained: marks,
         maxMarks,
+        passingMarks,
         percentage: percentage.toFixed(1),
         grade,
         remarks,
@@ -308,7 +308,8 @@ export default function DMCPage() {
                 <DMCTemplate
                   template={dmcTemplate}
                   schoolName={settings.schoolName}
-                  schoolSlogan={settings.schoolSlogan}
+                  schoolLogo={settings.schoolLogo}
+                  principalSignature={settings.principalSignature}
                   schoolAddress={settings.schoolAddress}
                   studentData={studentData}
                   classData={classData}
@@ -331,11 +332,12 @@ export default function DMCPage() {
   );
 }
 
-// Professional DMC Template Component
+// Professional DMC Template Component (Slogan Removed & Principal Sign Option with White Background)
 function DMCTemplate({
   template,
   schoolName,
-  schoolSlogan,
+  schoolLogo,
+  principalSignature,
   schoolAddress,
   studentData,
   classData,
@@ -351,7 +353,8 @@ function DMCTemplate({
 }: {
   template: string;
   schoolName: string;
-  schoolSlogan?: string;
+  schoolLogo?: string;
+  principalSignature?: string;
   schoolAddress?: string;
   studentData: any;
   classData: any;
@@ -406,37 +409,36 @@ function DMCTemplate({
       <div className="absolute bottom-2 right-2 w-12 h-12" style={{ borderBottom: `4px solid ${colors.primary}`, borderRight: `4px solid ${colors.primary}` }} />
 
       <div className="relative p-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          {/* School Logo Placeholder */}
+        {/* Header (No Slogan as requested: "dmc mein slogan na rako") */}
+        <div className="text-center mb-6">
+          {/* School Logo */}
           <div 
-            className="w-24 h-24 mx-auto mb-4 rounded-full flex items-center justify-center"
-            style={{ 
-              background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
-              boxShadow: `0 4px 15px ${colors.secondary}50`,
-            }}
+            className="w-20 h-20 mx-auto mb-3 rounded-xl flex items-center justify-center p-1 border bg-white shadow-md"
+            style={{ borderColor: colors.border }}
           >
-            <GraduationCap className="w-14 h-14 text-white" />
+            {schoolLogo ? (
+              <img src={schoolLogo} alt="School Logo" className="max-w-full max-h-full object-contain" />
+            ) : (
+              <Building className="w-12 h-12" style={{ color: colors.primary }} />
+            )}
           </div>
 
           {/* School Name */}
           <h1 
-            className="text-3xl font-bold tracking-wide uppercase mb-2"
+            className="text-3xl font-extrabold tracking-wide uppercase mb-1"
             style={{ color: colors.primary }}
           >
-            {schoolName}
+            {schoolName || 'SCHOOL NAME'}
           </h1>
-          {schoolSlogan && (
-            <p className="text-gray-600 italic text-sm mb-1">&ldquo;{schoolSlogan}&rdquo;</p>
-          )}
+          
           {schoolAddress && (
             <p className="text-gray-500 text-xs">{schoolAddress}</p>
           )}
 
           {/* Certificate Title */}
-          <div className="mt-6 inline-block">
+          <div className="mt-5 inline-block">
             <div 
-              className="px-8 py-3 rounded-full text-white text-xl font-bold tracking-widest"
+              className="px-8 py-2.5 rounded-full text-white text-lg font-bold tracking-widest shadow-md"
               style={{ background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` }}
             >
               DETAILED MARKS CERTIFICATE
@@ -479,13 +481,13 @@ function DMCTemplate({
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Date of Birth</p>
               <p className="font-semibold" style={{ color: colors.primary }}>
-                {studentData.dob ? new Date(studentData.dob).toLocaleDateString('en-IN') : 'N/A'}
+                {studentData.dob ? new Date(studentData.dob).toLocaleDateString() : 'N/A'}
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-500 uppercase tracking-wide">Date of Issue</p>
               <p className="font-semibold" style={{ color: colors.primary }}>
-                {new Date().toLocaleDateString('en-IN')}
+                {new Date().toLocaleDateString()}
               </p>
             </div>
           </div>
@@ -498,7 +500,7 @@ function DMCTemplate({
               <tr style={{ background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` }}>
                 <th className="py-3 px-4 text-left text-white font-semibold text-sm">S.No</th>
                 <th className="py-3 px-4 text-left text-white font-semibold text-sm">Subject</th>
-                <th className="py-3 px-4 text-center text-white font-semibold text-sm">Max Marks</th>
+                <th className="py-3 px-4 text-center text-white font-semibold text-sm">Total Marks</th>
                 <th className="py-3 px-4 text-center text-white font-semibold text-sm">Marks Obtained</th>
                 <th className="py-3 px-4 text-center text-white font-semibold text-sm">%</th>
                 <th className="py-3 px-4 text-center text-white font-semibold text-sm">Grade</th>
@@ -524,11 +526,11 @@ function DMCTemplate({
                       <span className="font-medium">{result.subject}</span>
                       {result.code && <span className="text-gray-400 text-xs ml-2">({result.code})</span>}
                     </td>
-                    <td className="py-3 px-4 text-center">{result.maxMarks}</td>
+                    <td className="py-3 px-4 text-center font-medium">{result.maxMarks}</td>
                     <td className="py-3 px-4 text-center font-bold" style={{ color: colors.primary }}>
                       {result.marksObtained}
                     </td>
-                    <td className="py-3 px-4 text-center">{result.percentage}%</td>
+                    <td className="py-3 px-4 text-center font-semibold">{result.percentage}%</td>
                     <td className="py-3 px-4 text-center">
                       <span 
                         className="inline-block px-3 py-1 rounded-full text-sm font-bold text-white"
@@ -629,38 +631,49 @@ function DMCTemplate({
           </div>
         </div>
 
-        {/* Signatures */}
+        {/* Signatures (White Background for Principal Signature as requested) */}
         <div className="grid grid-cols-3 gap-8 pt-8 mt-8" style={{ borderTop: `2px dashed ${colors.border}` }}>
           <div className="text-center">
-            <div className="h-16 mb-2" />
+            <div className="h-16 mb-2 bg-white" />
             <div className="border-t-2 pt-2" style={{ borderColor: colors.primary }}>
               <p className="font-semibold text-sm" style={{ color: colors.primary }}>Class Teacher</p>
             </div>
           </div>
           <div className="text-center">
-            <div className="h-16 mb-2 flex items-end justify-center">
+            <div className="h-16 mb-2 flex items-end justify-center bg-white">
               <div 
-                className="w-20 h-20 rounded-full flex items-center justify-center opacity-30"
-                style={{ border: `3px solid ${colors.primary}` }}
+                className="w-16 h-16 rounded-full flex items-center justify-center opacity-30"
+                style={{ border: `2px solid ${colors.primary}` }}
               >
-                <span className="text-xs font-bold" style={{ color: colors.primary }}>SEAL</span>
+                <span className="text-[10px] font-bold" style={{ color: colors.primary }}>SEAL</span>
               </div>
             </div>
             <div className="border-t-2 pt-2" style={{ borderColor: colors.primary }}>
               <p className="font-semibold text-sm" style={{ color: colors.primary }}>Examination Controller</p>
             </div>
           </div>
+          {/* Principal Signature Area with White Background */}
           <div className="text-center">
-            <div className="h-16 mb-2" />
+            <div className="h-16 mb-2 flex items-end justify-center bg-white">
+              {principalSignature ? (
+                <img
+                  src={principalSignature}
+                  alt="Principal Signature"
+                  className="max-h-14 max-w-[120px] object-contain bg-white"
+                />
+              ) : (
+                <div className="w-24 border-b border-gray-400 border-dashed mb-1" />
+              )}
+            </div>
             <div className="border-t-2 pt-2" style={{ borderColor: colors.primary }}>
-              <p className="font-semibold text-sm" style={{ color: colors.primary }}>Principal</p>
+              <p className="font-semibold text-sm" style={{ color: colors.primary }}>Principal Signature</p>
             </div>
           </div>
         </div>
 
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-gray-400">
-          <p>This is a computer-generated certificate. No signature required for online verification.</p>
+          <p>This is a computer-generated DMC certificate.</p>
           <p className="mt-1">Certificate ID: DMC-{studentData.id?.slice(0, 8).toUpperCase()}-{Date.now()}</p>
         </div>
       </div>

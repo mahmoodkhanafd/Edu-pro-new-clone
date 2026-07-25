@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import {
   Home,
@@ -21,11 +21,7 @@ import {
   Bell,
   Moon,
   Sun,
-  Database,
-  FileText,
-  UserCheck,
   CreditCard,
-  PieChart,
   Award,
   Briefcase,
 } from 'lucide-react';
@@ -128,12 +124,16 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
-  const { settings, updateSettings, sidebarOpen, setSidebarOpen, currentUser } = useStore();
+  const router = useRouter();
+  const { settings, updateSettings, sidebarOpen, setSidebarOpen, currentUser, setCurrentUser } = useStore();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    if (!currentUser && pathname !== '/login') {
+      router.push('/login');
+    }
     // Auto-expand active menu
     menuItems.forEach((item) => {
       if (item.children) {
@@ -143,7 +143,20 @@ export default function Layout({ children }: LayoutProps) {
         }
       }
     });
-  }, [pathname]);
+  }, [pathname, currentUser, router]);
+
+  // Apply dark mode class to html element
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (settings.darkMode) {
+        document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-dark', 'true');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-dark', 'false');
+      }
+    }
+  }, [settings.darkMode]);
 
   const toggleMenu = (name: string) => {
     setExpandedMenus((prev) =>
@@ -164,7 +177,13 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen" data-theme={settings.theme}>
+    <div
+      className={`flex min-h-screen transition-colors duration-300 ${
+        settings.darkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-gray-50 text-gray-900'
+      }`}
+      data-theme={settings.theme}
+      data-dark={settings.darkMode ? 'true' : 'false'}
+    >
       {/* Sidebar */}
       <aside
         className={`gradient-sidebar fixed lg:sticky top-0 h-screen z-40 transition-all duration-300 ${
@@ -269,51 +288,79 @@ export default function Layout({ children }: LayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Top Header */}
-        <header className="sticky top-0 z-30 bg-white shadow-sm">
+        <header className={`sticky top-0 z-30 transition-colors duration-300 shadow-sm ${settings.darkMode ? 'bg-slate-800 border-b border-slate-700 text-white' : 'bg-white text-gray-800'}`}>
           <div className="flex items-center justify-between px-4 lg:px-6 h-16">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className={`p-2 rounded-lg transition-colors ${settings.darkMode ? 'hover:bg-slate-700 text-slate-200' : 'hover:bg-gray-100 text-gray-600'}`}
               >
-                <Menu className="w-5 h-5 text-gray-600" />
+                <Menu className="w-5 h-5" />
               </button>
               <div>
-                <h2 className="font-semibold text-gray-800">{settings.schoolName}</h2>
-                <p className="text-xs text-gray-500">{settings.schoolSlogan}</p>
+                <h2 className={`font-semibold ${settings.darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  {settings.schoolName || 'EduPro School System'}
+                </h2>
+                {settings.schoolSlogan && (
+                  <p className={`text-xs ${settings.darkMode ? 'text-slate-400' : 'text-gray-500'}`}>
+                    {settings.schoolSlogan}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleTheme}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className={`p-2 rounded-lg transition-colors flex items-center gap-1.5 ${
+                  settings.darkMode
+                    ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'
+                }`}
+                title={settings.darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               >
                 {settings.darkMode ? (
-                  <Sun className="w-5 h-5 text-gray-600" />
+                  <>
+                    <Sun className="w-5 h-5 text-amber-400" />
+                    <span className="text-xs font-bold hidden md:inline">Light</span>
+                  </>
                 ) : (
-                  <Moon className="w-5 h-5 text-gray-600" />
+                  <>
+                    <Moon className="w-5 h-5 text-indigo-600" />
+                    <span className="text-xs font-bold hidden md:inline">Dark</span>
+                  </>
                 )}
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative">
-                <Bell className="w-5 h-5 text-gray-600" />
+              <button className={`p-2 rounded-lg transition-colors relative ${settings.darkMode ? 'hover:bg-slate-700 text-slate-200' : 'hover:bg-gray-100 text-gray-600'}`}>
+                <Bell className="w-5 h-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-              <div className="h-8 w-px bg-gray-200"></div>
-              <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600">
+              <div className={`h-8 w-px ${settings.darkMode ? 'bg-slate-700' : 'bg-gray-200'}`}></div>
+              <button
+                onClick={() => {
+                  setCurrentUser(null);
+                  router.push('/login');
+                }}
+                className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${
+                  settings.darkMode ? 'text-slate-300 hover:bg-slate-700 hover:text-red-400' : 'text-gray-600 hover:bg-gray-100 hover:text-red-600'
+                }`}
+                title="Logout"
+              >
                 <LogOut className="w-5 h-5" />
-                <span className="hidden sm:inline text-sm">Logout</span>
+                <span className="hidden sm:inline text-sm font-medium">Logout</span>
               </button>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6 bg-gray-50">{children}</main>
+        <main className={`flex-1 p-4 lg:p-6 transition-colors duration-300 ${settings.darkMode ? 'bg-slate-900 text-slate-100' : 'bg-gray-50 text-gray-900'}`}>
+          {children}
+        </main>
 
         {/* Footer */}
-        <footer className="bg-white border-t px-4 lg:px-6 py-3">
-          <div className="flex items-center justify-between text-sm text-gray-500">
+        <footer className={`border-t px-4 lg:px-6 py-3 transition-colors duration-300 ${settings.darkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-gray-200 text-gray-500'}`}>
+          <div className="flex items-center justify-between text-sm">
             <p>© 2025 EduPro School Management System</p>
             <p>Version 1.0.0</p>
           </div>

@@ -20,9 +20,11 @@ import {
   Bell,
   FileText,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function Dashboard() {
+  const router = useRouter();
   const {
     students,
     staff,
@@ -34,20 +36,22 @@ export default function Dashboard() {
     classes,
     activeSession,
     getStudentDues,
+    currentUser,
   } = useStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (!currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, router]);
 
-  if (!mounted) {
+  if (!mounted || !currentUser) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="spinner"></div>
-        </div>
-      </Layout>
+      <div className="min-h-screen flex items-center justify-center bg-[#0f0c20]">
+        <div className="spinner border-purple-500"></div>
+      </div>
     );
   }
 

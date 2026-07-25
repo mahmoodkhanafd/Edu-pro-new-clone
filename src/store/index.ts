@@ -133,6 +133,7 @@ export interface ExamResult {
   subjectId: string;
   marksObtained: number;
   maxMarks: number;
+  passingMarks?: number;
   grade?: string;
   remarks?: string;
 }
@@ -143,6 +144,8 @@ export interface Subject {
   code?: string;
   classId: string;
   teacherId?: string;
+  totalMarks?: number;
+  passingMarks?: number;
 }
 
 export interface FeeParticular {
@@ -194,6 +197,7 @@ export interface SchoolSettings {
   schoolName: string;
   schoolSlogan?: string;
   schoolLogo?: string;
+  principalSignature?: string;
   schoolAddress?: string;
   schoolPhone?: string;
   schoolEmail?: string;
@@ -251,6 +255,7 @@ interface AppState {
   updateStudent: (id: string, student: Partial<Student>) => void;
   deleteStudent: (id: string) => void;
   bulkPromoteStudents: (fromClassId: string, toClassId: string) => void;
+  promoteSelectedStudents: (studentIds: string[], toClassId: string) => void;
   
   // Family Actions
   addFamily: (family: Family) => void;
@@ -327,8 +332,13 @@ interface AppState {
 const generateId = () => crypto.randomUUID();
 
 const defaultSettings: SchoolSettings = {
-  schoolName: 'Sunshine Education Complex',
-  schoolSlogan: 'Illuminating Minds, Shaping Futures',
+  schoolName: '',
+  schoolSlogan: '',
+  schoolLogo: '',
+  principalSignature: '',
+  schoolAddress: '',
+  schoolPhone: '',
+  schoolEmail: '',
   theme: 'default',
   darkMode: false,
   currentMonth: new Date().getMonth() + 1,
@@ -424,7 +434,7 @@ export const useStore = create<AppState>()(
       smsLogs: [],
       settings: defaultSettings,
       sidebarOpen: true,
-      currentUser: { id: '1', name: 'Admin', role: 'admin' },
+      currentUser: null,
 
       // UI Actions
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
@@ -460,6 +470,11 @@ export const useStore = create<AppState>()(
       bulkPromoteStudents: (fromClassId, toClassId) => set((state) => ({
         students: state.students.map((s) =>
           s.classId === fromClassId && s.isActive ? { ...s, classId: toClassId } : s
+        ),
+      })),
+      promoteSelectedStudents: (studentIds, toClassId) => set((state) => ({
+        students: state.students.map((s) =>
+          studentIds.includes(s.id) && s.isActive ? { ...s, classId: toClassId } : s
         ),
       })),
 

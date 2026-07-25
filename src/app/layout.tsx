@@ -4,11 +4,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "EduPro - School Management System",
-  description: "Complete School Management System for Sunshine Education Complex",
+  description: "Complete School Management System",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "EduPro",
   },
 };
@@ -17,7 +17,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#3b82f6",
+  themeColor: "#3b0764",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -27,11 +27,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/Edupro_icon.jpg" />
       </head>
-      <body className="bg-slate-100 text-slate-900 antialiased">
+      <body className="bg-slate-100 text-slate-900 antialiased selection:bg-purple-500 selection:text-white">
         {children}
       </body>
     </html>
