@@ -10,16 +10,9 @@ import {
   Eye,
   EyeOff,
   LogIn,
-  CheckCircle2,
   Zap,
   Sparkles,
-  ShieldCheck,
   UserPlus,
-  ArrowRight,
-  BookOpen,
-  Award,
-  CreditCard,
-  Building,
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -58,7 +51,7 @@ export default function LoginPage() {
       });
       setGoogleLoading(false);
       router.push('/');
-    }, 500);
+    }, 400);
   };
 
   // Guest Direct Login
@@ -74,7 +67,7 @@ export default function LoginPage() {
       });
       setGuestLoading(false);
       router.push('/');
-    }, 400);
+    }, 300);
   };
 
   // Standard Form Submit (Login / Sign Up)
@@ -122,106 +115,65 @@ export default function LoginPage() {
           setLoading(false);
         }
       }
-    }, 500);
+    }, 400);
   };
 
   if (!mounted) return null;
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#0f0c20] text-gray-100 font-sans selection:bg-purple-500 selection:text-white">
-      {/* Left Branding Panel with Royal Purple Metallic Sheen */}
+      {/* Left Branding Panel with Royal Purple Sheen */}
       <div 
-        className="lg:w-1/2 relative overflow-hidden flex flex-col justify-between p-8 lg:p-16 text-white min-h-[350px] lg:min-h-screen"
+        className="lg:w-1/2 relative overflow-hidden flex flex-col justify-center p-6 lg:p-16 text-white min-h-[220px] lg:min-h-screen"
         style={{
           background: 'radial-gradient(circle at 30% 20%, #6b21a8 0%, #3b0764 45%, #18052e 100%)',
         }}
       >
         {/* Glow Lighting Overlays */}
         <div className="absolute inset-0 pointer-events-none opacity-40">
-          <div className="absolute -top-24 -left-24 w-[500px] h-[500px] rounded-full bg-purple-500/30 blur-[120px]" />
-          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-indigo-600/20 blur-[140px]" />
+          <div className="absolute -top-24 -left-24 w-[400px] h-[400px] rounded-full bg-purple-500/30 blur-[100px]" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-indigo-600/20 blur-[120px]" />
         </div>
 
-        {/* Top Header Logo */}
-        <div className="relative z-10 flex items-center gap-4">
-          {/* Squircle Metallic Icon matching reference image */}
-          <div className="relative w-14 h-14 rounded-2xl p-1 bg-gradient-to-br from-purple-400 via-purple-600 to-indigo-900 shadow-2xl shadow-purple-900/60 border border-purple-300/30 flex items-center justify-center overflow-hidden group">
-            <div className="absolute inset-0 bg-radial from-purple-400/30 to-transparent opacity-60" />
+        {/* Header Logo (Only the single clean public/Edupro_icon.jpg icon, no double icon / emoji) */}
+        <div className="relative z-10 flex items-center gap-4 mb-3">
+          <div className="w-14 h-14 rounded-2xl shadow-xl shadow-purple-950/80 overflow-hidden flex-shrink-0 border border-purple-400/40 bg-purple-900">
             <img 
               src="/Edupro_icon.jpg" 
-              alt="EduPro Icon" 
-              className="w-full h-full object-cover rounded-xl shadow-inner group-hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                // Fallback if image fails to render
-                e.currentTarget.style.display = 'none';
-              }}
+              alt="EduPro Logo" 
+              className="w-full h-full object-cover"
             />
-            <div className="w-full h-full flex items-center justify-center rounded-xl bg-purple-900/40 backdrop-blur-xs">
-              <span className="text-2xl">🎓</span>
-            </div>
           </div>
 
           <div>
-            <h1 className="text-2xl font-black tracking-wider uppercase text-white drop-shadow-sm flex items-center gap-2">
-              EduPro <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/30 tracking-normal font-medium">PRO</span>
-            </h1>
-            <p className="text-purple-300 text-xs font-semibold tracking-wide">Next-Gen School Management Portal</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-black tracking-wider uppercase text-white drop-shadow-sm">
+                EDUPRO
+              </h1>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/30 font-bold">
+                PRO
+              </span>
+            </div>
+            <p className="text-purple-300 text-xs font-semibold tracking-wide mt-0.5">
+              Next-Gen School Management Portal
+            </p>
           </div>
         </div>
 
-        {/* Hero Section */}
-        <div className="relative z-10 my-auto py-8">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/20 text-purple-200 text-xs font-bold mb-6 border border-purple-400/30 backdrop-blur-md shadow-inner">
-            <Sparkles className="w-4 h-4 text-purple-300 animate-pulse" />
+        {/* Hero Tagline */}
+        <div className="relative z-10 my-2">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/20 text-purple-200 text-xs font-bold border border-purple-400/30 backdrop-blur-md shadow-inner mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-purple-300 animate-pulse" />
             <span>Smart Cloud Management Portal</span>
           </div>
 
-          <h2 className="text-3xl lg:text-5xl font-black tracking-tight leading-tight text-white mb-4 drop-shadow-md">
+          <h2 className="text-2xl lg:text-4xl font-black tracking-tight leading-tight text-white drop-shadow-md">
             {settings.schoolName || 'EduPro School System'}
           </h2>
 
-          {settings.schoolSlogan ? (
-            <p className="text-lg text-purple-200/90 italic font-light mb-8 max-w-lg">&ldquo;{settings.schoolSlogan}&rdquo;</p>
-          ) : (
-            <p className="text-sm text-purple-200/80 font-normal mb-8 max-w-lg">
-              Streamline admissions, double-sided student ID cards, automated fee management, exam DMC certificates & cloud database synchronization.
-            </p>
+          {settings.schoolSlogan && (
+            <p className="text-sm text-purple-200/90 italic font-light mt-1.5">&ldquo;{settings.schoolSlogan}&rdquo;</p>
           )}
-
-          {/* Feature Highlights Grid */}
-          <div className="hidden lg:grid grid-cols-2 gap-3 max-w-xl">
-            {[
-              { icon: ShieldCheck, title: 'Complete Admin Control', desc: 'Manage students, fee collection & staff' },
-              { icon: CreditCard, title: 'Double-Sided ID Cards', desc: 'Front/Back cards with QR & signatures' },
-              { icon: Award, title: 'Smart DMC Certificates', desc: 'Subject total & passing marks engine' },
-              { icon: Building, title: 'Neon Database Ready', desc: 'Syncs directly with Vercel & Neon PostgreSQL' },
-            ].map((feature, idx) => {
-              const IconComp = feature.icon;
-              return (
-                <div 
-                  key={idx} 
-                  className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/20 backdrop-blur-md hover:border-purple-400/40 transition-all hover:bg-purple-900/30 shadow-lg"
-                >
-                  <div className="flex items-center gap-2.5 mb-1">
-                    <div className="p-1.5 rounded-lg bg-purple-600/30 text-purple-300 border border-purple-400/30">
-                      <IconComp className="w-4 h-4" />
-                    </div>
-                    <p className="font-bold text-xs text-white tracking-wide">{feature.title}</p>
-                  </div>
-                  <p className="text-[11px] text-purple-200/70 leading-relaxed pl-8">{feature.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="relative z-10 pt-6 border-t border-purple-500/20 text-xs text-purple-300/60 flex items-center justify-between">
-          <p>© 2025 EduPro School Platform</p>
-          <div className="flex items-center gap-2 text-purple-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span className="font-mono text-[11px]">System Online</span>
-          </div>
         </div>
       </div>
 
@@ -341,7 +293,7 @@ export default function LoginPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="mb-4 p-3 bg-red-950/60 border border-red-500/40 rounded-xl text-red-200 text-xs font-semibold flex items-center gap-2 animate-shake">
+              <div className="mb-4 p-3 bg-red-950/60 border border-red-500/40 rounded-xl text-red-200 text-xs font-semibold flex items-center gap-2">
                 <Lock className="w-4 h-4 text-red-400 flex-shrink-0" />
                 <span>{error}</span>
               </div>
