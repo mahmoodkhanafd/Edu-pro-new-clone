@@ -1,0 +1,21 @@
+{
+  "name": "EduPro - School Management System",
+  "short_name": "EduPro",
+  "description": "Complete School Management System for Sunshine Education Complex",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
