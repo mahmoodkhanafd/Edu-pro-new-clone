@@ -255,6 +255,7 @@ interface AppState {
   updateStudent: (id: string, student: Partial<Student>) => void;
   deleteStudent: (id: string) => void;
   bulkPromoteStudents: (fromClassId: string, toClassId: string) => void;
+  promoteSelectedStudents: (studentIds: string[], toClassId: string) => void;
   
   // Family Actions
   addFamily: (family: Family) => void;
@@ -469,6 +470,11 @@ export const useStore = create<AppState>()(
       bulkPromoteStudents: (fromClassId, toClassId) => set((state) => ({
         students: state.students.map((s) =>
           s.classId === fromClassId && s.isActive ? { ...s, classId: toClassId } : s
+        ),
+      })),
+      promoteSelectedStudents: (studentIds, toClassId) => set((state) => ({
+        students: state.students.map((s) =>
+          studentIds.includes(s.id) && s.isActive ? { ...s, classId: toClassId } : s
         ),
       })),
 
