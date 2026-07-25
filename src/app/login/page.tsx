@@ -4,16 +4,22 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import {
-  GraduationCap,
   Lock,
   User,
   Mail,
   Eye,
   EyeOff,
   LogIn,
-  CheckCircle,
+  CheckCircle2,
   Zap,
   Sparkles,
+  ShieldCheck,
+  UserPlus,
+  ArrowRight,
+  BookOpen,
+  Award,
+  CreditCard,
+  Building,
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -34,7 +40,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
-    // If already logged in, redirect to dashboard
     if (currentUser) {
       router.push('/');
     }
@@ -80,7 +85,6 @@ export default function LoginPage() {
 
     setTimeout(() => {
       if (activeTab === 'signup') {
-        // Direct Signup without OTP -> Logged in as Admin
         if (!name.trim()) {
           setError('Please enter your full name');
           setLoading(false);
@@ -94,7 +98,6 @@ export default function LoginPage() {
         setLoading(false);
         router.push('/');
       } else {
-        // Admin Login Check
         const validUsers = [
           { username: 'admin', password: 'admin123', name: 'Administrator', role: 'admin' },
           { username: 'teacher', password: 'teacher123', name: 'Teacher', role: 'teacher' },
@@ -125,115 +128,170 @@ export default function LoginPage() {
   if (!mounted) return null;
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-gray-50">
-      {/* Left Branding Panel */}
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[#0f0c20] text-gray-100 font-sans selection:bg-purple-500 selection:text-white">
+      {/* Left Branding Panel with Royal Purple Metallic Sheen */}
       <div 
-        className="lg:w-1/2 relative overflow-hidden flex flex-col justify-between p-8 lg:p-16 text-white min-h-[300px] lg:min-h-screen"
-        style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 60%, #1e1b4b 100%)' }}
+        className="lg:w-1/2 relative overflow-hidden flex flex-col justify-between p-8 lg:p-16 text-white min-h-[350px] lg:min-h-screen"
+        style={{
+          background: 'radial-gradient(circle at 30% 20%, #6b21a8 0%, #3b0764 45%, #18052e 100%)',
+        }}
       >
-        {/* Background Ambient Circles */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-10 left-10 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-purple-500/10 blur-3xl" />
+        {/* Glow Lighting Overlays */}
+        <div className="absolute inset-0 pointer-events-none opacity-40">
+          <div className="absolute -top-24 -left-24 w-[500px] h-[500px] rounded-full bg-purple-500/30 blur-[120px]" />
+          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-indigo-600/20 blur-[140px]" />
         </div>
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
-              <GraduationCap className="w-7 h-7 text-blue-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white">EduPro</h1>
-              <p className="text-blue-300 text-xs font-medium">School Management System</p>
+        {/* Top Header Logo */}
+        <div className="relative z-10 flex items-center gap-4">
+          {/* Squircle Metallic Icon matching reference image */}
+          <div className="relative w-14 h-14 rounded-2xl p-1 bg-gradient-to-br from-purple-400 via-purple-600 to-indigo-900 shadow-2xl shadow-purple-900/60 border border-purple-300/30 flex items-center justify-center overflow-hidden group">
+            <div className="absolute inset-0 bg-radial from-purple-400/30 to-transparent opacity-60" />
+            <img 
+              src="/Edupro_icon.jpg" 
+              alt="EduPro Icon" 
+              className="w-full h-full object-cover rounded-xl shadow-inner group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                // Fallback if image fails to render
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+            <div className="w-full h-full flex items-center justify-center rounded-xl bg-purple-900/40 backdrop-blur-xs">
+              <span className="text-2xl">🎓</span>
             </div>
           </div>
 
-          <div className="mt-8 lg:mt-16">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-200 text-xs font-semibold mb-4 border border-blue-400/30">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" /> Complete Admin Portal
-            </span>
-            <h2 className="text-3xl lg:text-5xl font-extrabold leading-tight text-white mb-3">
-              {settings.schoolName || 'EduPro School System'}
-            </h2>
-            {settings.schoolSlogan && (
-              <p className="text-lg text-blue-200 italic mb-6">&ldquo;{settings.schoolSlogan}&rdquo;</p>
-            )}
+          <div>
+            <h1 className="text-2xl font-black tracking-wider uppercase text-white drop-shadow-sm flex items-center gap-2">
+              EduPro <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-400/30 tracking-normal font-medium">PRO</span>
+            </h1>
+            <p className="text-purple-300 text-xs font-semibold tracking-wide">Next-Gen School Management Portal</p>
+          </div>
+        </div>
 
-            <div className="hidden lg:grid grid-cols-1 gap-4 mt-8">
-              {[
-                { title: 'Full Admin Privileges', desc: 'Manage students, fees, staff, expenses & exams with 100% control' },
-                { title: 'Double-Sided ID Cards', desc: 'Instant PDF export & print ready with return notice & signature' },
-                { title: 'Smart DMC Certificates', desc: 'Detailed marks sheets with manual total & passing marks configuration' },
-                { title: 'Neon Database Ready', desc: 'Seamless integration with Vercel & Neon PostgreSQL cloud DB' },
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-sm text-white">{item.title}</p>
-                    <p className="text-xs text-blue-200/80">{item.desc}</p>
+        {/* Hero Section */}
+        <div className="relative z-10 my-auto py-8">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/20 text-purple-200 text-xs font-bold mb-6 border border-purple-400/30 backdrop-blur-md shadow-inner">
+            <Sparkles className="w-4 h-4 text-purple-300 animate-pulse" />
+            <span>Smart Cloud Management Portal</span>
+          </div>
+
+          <h2 className="text-3xl lg:text-5xl font-black tracking-tight leading-tight text-white mb-4 drop-shadow-md">
+            {settings.schoolName || 'EduPro School System'}
+          </h2>
+
+          {settings.schoolSlogan ? (
+            <p className="text-lg text-purple-200/90 italic font-light mb-8 max-w-lg">&ldquo;{settings.schoolSlogan}&rdquo;</p>
+          ) : (
+            <p className="text-sm text-purple-200/80 font-normal mb-8 max-w-lg">
+              Streamline admissions, double-sided student ID cards, automated fee management, exam DMC certificates & cloud database synchronization.
+            </p>
+          )}
+
+          {/* Feature Highlights Grid */}
+          <div className="hidden lg:grid grid-cols-2 gap-3 max-w-xl">
+            {[
+              { icon: ShieldCheck, title: 'Complete Admin Control', desc: 'Manage students, fee collection & staff' },
+              { icon: CreditCard, title: 'Double-Sided ID Cards', desc: 'Front/Back cards with QR & signatures' },
+              { icon: Award, title: 'Smart DMC Certificates', desc: 'Subject total & passing marks engine' },
+              { icon: Building, title: 'Neon Database Ready', desc: 'Syncs directly with Vercel & Neon PostgreSQL' },
+            ].map((feature, idx) => {
+              const IconComp = feature.icon;
+              return (
+                <div 
+                  key={idx} 
+                  className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/20 backdrop-blur-md hover:border-purple-400/40 transition-all hover:bg-purple-900/30 shadow-lg"
+                >
+                  <div className="flex items-center gap-2.5 mb-1">
+                    <div className="p-1.5 rounded-lg bg-purple-600/30 text-purple-300 border border-purple-400/30">
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                    <p className="font-bold text-xs text-white tracking-wide">{feature.title}</p>
                   </div>
+                  <p className="text-[11px] text-purple-200/70 leading-relaxed pl-8">{feature.desc}</p>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
 
-        <div className="relative z-10 mt-8 pt-6 border-t border-white/10 text-xs text-blue-300/60 flex items-center justify-between">
-          <p>© 2025 EduPro Management System</p>
-          <p>Version 2.0 (Cloud Enabled)</p>
+        {/* Footer */}
+        <div className="relative z-10 pt-6 border-t border-purple-500/20 text-xs text-purple-300/60 flex items-center justify-between">
+          <p>© 2025 EduPro School Platform</p>
+          <div className="flex items-center gap-2 text-purple-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span className="font-mono text-[11px]">System Online</span>
+          </div>
         </div>
       </div>
 
-      {/* Right Form Panel */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-md space-y-6">
-          {/* Card Wrapper */}
-          <div className="bg-white rounded-2xl shadow-xl p-6 lg:p-8 border border-gray-100">
-            {/* Header Tabs */}
-            <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+      {/* Right Form Panel with Deep Purple Glassmorphism */}
+      <div 
+        className="flex-1 flex items-center justify-center p-6 lg:p-12 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(180deg, #12092b 0%, #0a0518 100%)',
+        }}
+      >
+        {/* Subtle Ambient Light */}
+        <div className="absolute top-1/4 right-1/4 w-80 h-80 rounded-full bg-purple-600/10 blur-[100px] pointer-events-none" />
+
+        <div className="w-full max-w-md relative z-10">
+          {/* Glass Card */}
+          <div className="bg-[#1a0f35]/90 rounded-3xl p-6 lg:p-8 border border-purple-500/20 shadow-2xl backdrop-blur-xl shadow-purple-950/80">
+            
+            {/* Header Tab Switcher */}
+            <div className="flex bg-[#110824] p-1 rounded-2xl mb-6 border border-purple-500/20">
               <button
                 type="button"
                 onClick={() => { setActiveTab('login'); setError(''); }}
-                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                  activeTab === 'login' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+                className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
+                  activeTab === 'login'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-900/50 border border-purple-400/30'
+                    : 'text-purple-300/60 hover:text-purple-200'
                 }`}
               >
+                <LogIn className="w-3.5 h-3.5" />
                 Admin Sign In
               </button>
               <button
                 type="button"
                 onClick={() => { setActiveTab('signup'); setError(''); }}
-                className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
-                  activeTab === 'signup' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+                className={`flex-1 py-2.5 text-xs font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${
+                  activeTab === 'signup'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-900/50 border border-purple-400/30'
+                    : 'text-purple-300/60 hover:text-purple-200'
                 }`}
               >
+                <UserPlus className="w-3.5 h-3.5" />
                 Sign Up (Admin)
               </button>
             </div>
 
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                {activeTab === 'login' ? 'Welcome Back Admin' : 'Create Admin Account'}
-              </h2>
-              <p className="text-xs text-gray-500 mt-1">
-                {activeTab === 'login' ? 'Enter credentials or use instant single-click login options' : 'Instant Admin Registration (No OTP required)'}
+              <h3 className="text-2xl font-black text-white tracking-tight">
+                {activeTab === 'login' ? 'Admin Authentication' : 'Create Admin Account'}
+              </h3>
+              <p className="text-xs text-purple-300/70 mt-1 font-medium">
+                {activeTab === 'login'
+                  ? 'Access full school management suite instantly'
+                  : 'Register administrator account without OTP verification'}
               </p>
             </div>
 
-            {/* Quick One-Click Access Section */}
+            {/* Quick 1-Click Access Buttons */}
             <div className="space-y-3 mb-6">
               {/* Google Sign In Button */}
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading}
-                className="w-full py-3 px-4 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow"
+                className="w-full py-3 px-4 rounded-xl border border-purple-400/30 bg-[#251543] hover:bg-[#2f1b54] text-white font-bold text-xs tracking-wide transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-purple-900/40 hover:border-purple-400/60 disabled:opacity-50"
               >
                 {googleLoading ? (
-                  <div className="spinner w-5 h-5 border-blue-600"></div>
+                  <div className="spinner w-4 h-4 border-purple-300"></div>
                 ) : (
                   <>
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
                       <path
                         fill="#4285F4"
                         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -251,55 +309,59 @@ export default function LoginPage() {
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                       />
                     </svg>
-                    <span>Sign in with Google (No OTP)</span>
+                    <span>Sign in with Google (No OTP Required)</span>
                   </>
                 )}
               </button>
 
-              {/* Guest Login Button (Direct Access) */}
+              {/* Guest Direct Access Button */}
               <button
                 type="button"
                 onClick={handleGuestLogin}
                 disabled={guestLoading}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white font-extrabold text-xs tracking-wider uppercase transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-purple-900/60 border border-purple-300/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
               >
                 {guestLoading ? (
-                  <div className="spinner w-5 h-5 border-white"></div>
+                  <div className="spinner w-4 h-4 border-white"></div>
                 ) : (
                   <>
-                    <Zap className="w-5 h-5 text-yellow-300" />
+                    <Zap className="w-4 h-4 text-amber-300 animate-bounce" />
                     <span>Direct Guest Login (Instant Full Access)</span>
                   </>
                 )}
               </button>
             </div>
 
-            <div className="relative flex items-center justify-center my-4">
-              <div className="border-t border-gray-200 w-full" />
-              <span className="bg-white px-3 text-xs text-gray-400 font-semibold uppercase relative z-10">Or with details</span>
+            <div className="relative flex items-center justify-center my-5">
+              <div className="border-t border-purple-500/20 w-full" />
+              <span className="bg-[#1a0f35] px-3 text-[10px] text-purple-300/50 font-bold uppercase tracking-widest relative z-10">
+                Or with Credentials
+              </span>
             </div>
 
-            {/* Error Banner */}
+            {/* Error Message */}
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold flex items-center gap-2">
-                <Lock className="w-4 h-4 flex-shrink-0" />
+              <div className="mb-4 p-3 bg-red-950/60 border border-red-500/40 rounded-xl text-red-200 text-xs font-semibold flex items-center gap-2 animate-shake">
+                <Lock className="w-4 h-4 text-red-400 flex-shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
-            {/* Form */}
+            {/* Credentials Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {activeTab === 'signup' && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name *</label>
+                  <label className="block text-xs font-bold text-purple-200/90 mb-1.5 tracking-wide">
+                    Full Name <span className="text-purple-400">*</span>
+                  </label>
                   <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400/60" />
                     <input
                       type="text"
-                      className="input-field pl-10 py-2.5 text-sm"
+                      className="w-full bg-[#110724] border border-purple-500/30 focus:border-purple-400 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-purple-300/30 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Administrator / Director"
+                      placeholder="e.g. Principal / Administrator"
                       required
                     />
                   </div>
@@ -307,14 +369,14 @@ export default function LoginPage() {
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label className="block text-xs font-bold text-purple-200/90 mb-1.5 tracking-wide">
                   {activeTab === 'signup' ? 'Email Address *' : 'Username or Email *'}
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400/60" />
                   <input
                     type="text"
-                    className="input-field pl-10 py-2.5 text-sm"
+                    className="w-full bg-[#110724] border border-purple-500/30 focus:border-purple-400 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-purple-300/30 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
                     value={emailOrUsername}
                     onChange={(e) => setEmailOrUsername(e.target.value)}
                     placeholder={activeTab === 'signup' ? 'admin@school.com' : 'admin or admin@school.com'}
@@ -324,12 +386,14 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Password *</label>
+                <label className="block text-xs font-bold text-purple-200/90 mb-1.5 tracking-wide">
+                  Password <span className="text-purple-400">*</span>
+                </label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-400/60" />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    className="input-field pl-10 pr-10 py-2.5 text-sm"
+                    className="w-full bg-[#110724] border border-purple-500/30 focus:border-purple-400 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-purple-300/30 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
@@ -338,7 +402,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-400/60 hover:text-purple-200 transition-colors"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -348,23 +412,25 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md"
+                className="w-full py-3 rounded-xl font-extrabold text-xs uppercase tracking-wider text-white transition-all duration-200 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-xl shadow-purple-950 border border-purple-400/30 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
               >
                 {loading ? (
-                  <div className="spinner w-5 h-5 border-white"></div>
+                  <div className="spinner w-4 h-4 border-white"></div>
                 ) : (
                   <>
                     <LogIn className="w-4 h-4" />
-                    <span>{activeTab === 'signup' ? 'Complete Admin Sign Up' : 'Sign In as Admin'}</span>
+                    <span>{activeTab === 'signup' ? 'Complete Admin Registration' : 'Sign In as Admin'}</span>
                   </>
                 )}
               </button>
             </form>
 
-            {/* Default Hint */}
-            <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-              <span>Default credentials:</span>
-              <span className="font-mono font-bold text-gray-700">admin / admin123</span>
+            {/* Default Admin Info Box */}
+            <div className="mt-5 pt-4 border-t border-purple-500/20 flex items-center justify-between text-[11px] text-purple-300/60">
+              <span>Default Credentials:</span>
+              <span className="font-mono font-bold text-purple-200 bg-purple-900/40 px-2 py-0.5 rounded border border-purple-500/30">
+                admin / admin123
+              </span>
             </div>
           </div>
         </div>
