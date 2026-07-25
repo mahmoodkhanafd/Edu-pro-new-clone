@@ -18,7 +18,7 @@ export default function SettingsPage() {
   const [mounted, setMounted] = useState(false);
   const [saved, setSaved] = useState(false);
   const [formData, setFormData] = useState({
-    schoolName: settings.schoolName,
+    schoolName: settings.schoolName || '',
     schoolSlogan: settings.schoolSlogan || '',
     schoolAddress: settings.schoolAddress || '',
     schoolPhone: settings.schoolPhone || '',
@@ -28,7 +28,7 @@ export default function SettingsPage() {
   useEffect(() => {
     setMounted(true);
     setFormData({
-      schoolName: settings.schoolName,
+      schoolName: settings.schoolName || '',
       schoolSlogan: settings.schoolSlogan || '',
       schoolAddress: settings.schoolAddress || '',
       schoolPhone: settings.schoolPhone || '',
@@ -161,44 +161,107 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Logo Upload */}
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              School Logo
-            </label>
-            <div className="flex items-center gap-4">
-              <div className="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300">
-                {settings.schoolLogo ? (
-                  <img
-                    src={settings.schoolLogo}
-                    alt="School Logo"
-                    className="w-full h-full object-contain rounded-xl"
-                  />
-                ) : (
-                  <Building className="w-10 h-10 text-gray-400" />
-                )}
+          {/* Logo & Principal Signature Upload */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100">
+            {/* Logo Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                School Logo
+              </label>
+              <div className="flex items-center gap-4">
+                <div className="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 relative group overflow-hidden">
+                  {settings.schoolLogo ? (
+                    <img
+                      src={settings.schoolLogo}
+                      alt="School Logo"
+                      className="w-full h-full object-contain rounded-xl"
+                    />
+                  ) : (
+                    <Building className="w-10 h-10 text-gray-400" />
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="btn-secondary flex items-center gap-2 cursor-pointer text-sm py-2">
+                    <Upload className="w-4 h-4" />
+                    Upload Logo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            updateSettings({ schoolLogo: event.target?.result as string });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                  {settings.schoolLogo && (
+                    <button
+                      type="button"
+                      onClick={() => updateSettings({ schoolLogo: '' })}
+                      className="text-xs text-red-600 hover:underline block"
+                    >
+                      Remove Logo
+                    </button>
+                  )}
+                  <p className="text-xs text-gray-500">PNG or JPG (200x200px)</p>
+                </div>
               </div>
-              <div>
-                <label className="btn-secondary flex items-center gap-2 cursor-pointer">
-                  <Upload className="w-4 h-4" />
-                  Upload Logo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          updateSettings({ schoolLogo: event.target?.result as string });
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </label>
-                <p className="text-xs text-gray-500 mt-1">Recommended: 200x200px</p>
+            </div>
+
+            {/* Principal Signature PNG */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Principal Signature (PNG)
+              </label>
+              <div className="flex items-center gap-4">
+                <div className="w-32 h-24 bg-gray-50 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 relative overflow-hidden">
+                  {settings.principalSignature ? (
+                    <img
+                      src={settings.principalSignature}
+                      alt="Principal Signature"
+                      className="max-w-full max-h-full object-contain p-1"
+                    />
+                  ) : (
+                    <span className="text-xs text-gray-400 font-medium text-center p-2">No Signature Uploaded</span>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="btn-secondary flex items-center gap-2 cursor-pointer text-sm py-2">
+                    <Upload className="w-4 h-4" />
+                    Upload Signature
+                    <input
+                      type="file"
+                      accept="image/png,image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            updateSettings({ principalSignature: event.target?.result as string });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                  {settings.principalSignature && (
+                    <button
+                      type="button"
+                      onClick={() => updateSettings({ principalSignature: '' })}
+                      className="text-xs text-red-600 hover:underline block"
+                    >
+                      Remove Signature
+                    </button>
+                  )}
+                  <p className="text-xs text-gray-500">Transparent PNG recommended</p>
+                </div>
               </div>
             </div>
           </div>

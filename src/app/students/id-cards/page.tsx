@@ -6,13 +6,9 @@ import { useStore } from '@/store';
 import {
   CreditCard,
   Printer,
-  Download,
-  Search,
   User,
   Phone,
-  MapPin,
-  Calendar,
-  GraduationCap,
+  Building,
   FileDown,
   CheckSquare,
   Square,
@@ -24,6 +20,7 @@ export default function IdCardsPage() {
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [cardTemplate, setCardTemplate] = useState('professional');
+  const [cardSideView, setCardSideView] = useState<'both' | 'front' | 'back'>('both');
   const [showPreview, setShowPreview] = useState(false);
   const [generating, setGenerating] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
@@ -76,10 +73,6 @@ export default function IdCardsPage() {
       const jsPDF = jsPDFModule.default;
       
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      
-      // Card dimensions in mm (credit card size: 85.6mm x 53.98mm)
       const cardWidth = 85.6;
       const cardHeight = 54;
       const margin = 10;
@@ -87,7 +80,6 @@ export default function IdCardsPage() {
       const cardsPerPage = 8;
       
       const cardElements = printRef.current.querySelectorAll('.id-card-item');
-      let cardIndex = 0;
       
       for (let i = 0; i < cardElements.length; i++) {
         if (i > 0 && i % cardsPerPage === 0) {
@@ -111,7 +103,7 @@ export default function IdCardsPage() {
         pdf.addImage(imgData, 'PNG', x, y, cardWidth, cardHeight);
       }
       
-      pdf.save(`ID-Cards-${selectedClass === 'all' ? 'All-Classes' : getClassName(selectedClass)}.pdf`);
+      pdf.save(`Double-Side-ID-Cards-${selectedClass === 'all' ? 'All-Classes' : getClassName(selectedClass)}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try printing instead.');
@@ -136,8 +128,8 @@ export default function IdCardsPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Student ID Cards</h1>
-            <p className="text-gray-500">Generate professional student identity cards</p>
+            <h1 className="text-2xl font-bold text-gray-800">Student Double-Sided ID Cards</h1>
+            <p className="text-gray-500">Generate professional front & back student identity cards</p>
           </div>
           {selectedStudents.length > 0 && (
             <div className="flex gap-3">
@@ -244,8 +236,40 @@ export default function IdCardsPage() {
           {/* Template Selection & Preview */}
           <div className="space-y-4">
             <div className="card p-6">
-              <h3 className="font-semibold text-gray-800 mb-4">Card Design</h3>
-              <div className="space-y-3">
+              <h3 className="font-semibold text-gray-800 mb-4">Card Design & Side</h3>
+              
+              {/* Side View Selector */}
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-gray-500 mb-1">View Side</label>
+                <div className="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-lg">
+                  <button
+                    onClick={() => setCardSideView('both')}
+                    className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                      cardSideView === 'both' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Both Sides
+                  </button>
+                  <button
+                    onClick={() => setCardSideView('front')}
+                    className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                      cardSideView === 'front' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Front Only
+                  </button>
+                  <button
+                    onClick={() => setCardSideView('back')}
+                    className={`py-1.5 text-xs font-medium rounded-md transition-all ${
+                      cardSideView === 'back' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Back Only
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 {[
                   { id: 'professional', name: 'Professional Blue', desc: 'Clean corporate look' },
                   { id: 'modern', name: 'Modern Gradient', desc: 'Colorful gradient design' },
@@ -255,13 +279,13 @@ export default function IdCardsPage() {
                   <button
                     key={template.id}
                     onClick={() => setCardTemplate(template.id)}
-                    className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
+                    className={`w-full p-3 rounded-lg border text-left transition-colors ${
                       cardTemplate === template.id
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <p className="font-medium text-gray-800">{template.name}</p>
+                    <p className="font-medium text-sm text-gray-800">{template.name}</p>
                     <p className="text-xs text-gray-500">{template.desc}</p>
                   </button>
                 ))}
@@ -269,17 +293,26 @@ export default function IdCardsPage() {
             </div>
 
             {/* Preview Card */}
-            <div className="card p-6">
-              <h3 className="font-semibold text-gray-800 mb-4">Preview</h3>
+            <div className="card p-4">
+              <h3 className="font-semibold text-gray-800 mb-3 text-sm flex items-center justify-between">
+                <span>Card Preview</span>
+                <span className="text-xs text-blue-600 font-normal">Double-Sided</span>
+              </h3>
               {selectedStudentData[0] ? (
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-4">
                   <ProfessionalIDCard
                     student={selectedStudentData[0]}
                     template={cardTemplate}
                     className={getClassName(selectedStudentData[0].classId)}
                     schoolName={settings.schoolName}
                     schoolSlogan={settings.schoolSlogan}
+                    schoolLogo={settings.schoolLogo}
+                    principalSignature={settings.principalSignature}
+                    schoolAddress={settings.schoolAddress}
+                    schoolPhone={settings.schoolPhone}
+                    schoolEmail={settings.schoolEmail}
                     session={activeSession?.name}
+                    sideView={cardSideView}
                   />
                 </div>
               ) : (
@@ -300,9 +333,12 @@ export default function IdCardsPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6 no-print">
-                <h2 className="text-xl font-bold text-gray-800">
-                  ID Cards Preview ({selectedStudentData.length} Cards)
-                </h2>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">
+                    ID Cards Preview ({selectedStudentData.length} Students)
+                  </h2>
+                  <p className="text-xs text-gray-500">Double-sided ID cards with return information & principal signature</p>
+                </div>
                 <div className="flex gap-3">
                   <button
                     onClick={handleExportPDF}
@@ -323,16 +359,22 @@ export default function IdCardsPage() {
               </div>
 
               {/* Cards Grid for Printing/Export */}
-              <div ref={printRef} className="grid grid-cols-2 gap-6 print-content p-4 bg-white">
+              <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 print-content p-4 bg-white">
                 {selectedStudentData.map((student) => (
-                  <div key={student.id} className="id-card-item flex justify-center">
+                  <div key={student.id} className="id-card-item flex flex-col items-center justify-center p-2 border rounded-lg bg-gray-50">
                     <ProfessionalIDCard
                       student={student}
                       template={cardTemplate}
                       className={getClassName(student.classId)}
                       schoolName={settings.schoolName}
                       schoolSlogan={settings.schoolSlogan}
+                      schoolLogo={settings.schoolLogo}
+                      principalSignature={settings.principalSignature}
+                      schoolAddress={settings.schoolAddress}
+                      schoolPhone={settings.schoolPhone}
+                      schoolEmail={settings.schoolEmail}
                       session={activeSession?.name}
+                      sideView={cardSideView}
                       fullSize
                     />
                   </div>
@@ -346,14 +388,20 @@ export default function IdCardsPage() {
   );
 }
 
-// Professional ID Card Component
+// Professional ID Card Component (Front & Back)
 function ProfessionalIDCard({
   student,
   template,
   className,
   schoolName,
   schoolSlogan,
+  schoolLogo,
+  principalSignature,
+  schoolAddress,
+  schoolPhone,
+  schoolEmail,
   session,
+  sideView = 'both',
   fullSize = false,
 }: {
   student: any;
@@ -361,93 +409,109 @@ function ProfessionalIDCard({
   className: string;
   schoolName: string;
   schoolSlogan?: string;
+  schoolLogo?: string;
+  principalSignature?: string;
+  schoolAddress?: string;
+  schoolPhone?: string;
+  schoolEmail?: string;
   session?: string;
+  sideView?: 'both' | 'front' | 'back';
   fullSize?: boolean;
 }) {
-  const templates: Record<string, { headerBg: string; accentColor: string; textColor: string }> = {
+  const templates: Record<string, { headerBg: string; accentColor: string; textColor: string; cardBg: string }> = {
     professional: {
       headerBg: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
       accentColor: '#3b82f6',
       textColor: '#1e3a8a',
+      cardBg: '#f8fafc',
     },
     modern: {
       headerBg: 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
       accentColor: '#8b5cf6',
       textColor: '#6366f1',
+      cardBg: '#faf5ff',
     },
     classic: {
       headerBg: 'linear-gradient(135deg, #065f46 0%, #10b981 100%)',
       accentColor: '#10b981',
       textColor: '#065f46',
+      cardBg: '#f0fdf4',
     },
     elegant: {
       headerBg: 'linear-gradient(135deg, #581c87 0%, #9333ea 100%)',
       accentColor: '#9333ea',
       textColor: '#581c87',
+      cardBg: '#fdf4ff',
     },
   };
 
   const style = templates[template] || templates.professional;
+  const width = fullSize ? '340px' : '280px';
+  const height = fullSize ? '215px' : '177px';
 
-  return (
+  // Front Side Component
+  const FrontSide = (
     <div
-      className="bg-white rounded-xl overflow-hidden shadow-2xl border border-gray-200"
+      className="bg-white rounded-xl overflow-hidden shadow-xl border border-gray-300 flex flex-col justify-between relative"
       style={{
-        width: fullSize ? '340px' : '280px',
-        height: fullSize ? '215px' : '177px',
+        width,
+        height,
       }}
     >
-      {/* Header with School Name */}
+      {/* Header with School Name and Logo */}
       <div
-        className="text-white p-3 relative"
-        style={{ background: style.headerBg, height: fullSize ? '70px' : '58px' }}
+        className="text-white px-3 py-2 relative flex items-center justify-between"
+        style={{ background: style.headerBg, height: fullSize ? '62px' : '52px' }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {/* Custom School Logo or fallback */}
           <div 
-            className="rounded-lg flex items-center justify-center flex-shrink-0"
+            className="rounded-lg flex items-center justify-center flex-shrink-0 bg-white/20 p-1"
             style={{
-              width: fullSize ? '45px' : '36px',
-              height: fullSize ? '45px' : '36px',
-              backgroundColor: 'rgba(255,255,255,0.2)',
+              width: fullSize ? '40px' : '32px',
+              height: fullSize ? '40px' : '32px',
             }}
           >
-            <GraduationCap style={{ width: fullSize ? '28px' : '22px', height: fullSize ? '28px' : '22px' }} />
+            {schoolLogo ? (
+              <img src={schoolLogo} alt="School Logo" className="w-full h-full object-contain rounded" />
+            ) : (
+              <Building style={{ width: fullSize ? '22px' : '18px', height: fullSize ? '22px' : '18px' }} />
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <h1 
-              className="font-bold leading-tight truncate"
-              style={{ fontSize: fullSize ? '14px' : '11px' }}
+              className="font-bold leading-tight truncate uppercase tracking-tight"
+              style={{ fontSize: fullSize ? '13px' : '10px' }}
             >
-              {schoolName}
+              {schoolName || 'SCHOOL NAME'}
             </h1>
             {schoolSlogan && (
               <p 
-                className="opacity-80 truncate"
-                style={{ fontSize: fullSize ? '9px' : '7px' }}
+                className="opacity-90 truncate italic"
+                style={{ fontSize: fullSize ? '8px' : '6.5px' }}
               >
                 {schoolSlogan}
               </p>
             )}
           </div>
         </div>
-        {/* ID Badge Label */}
         <div 
-          className="absolute right-3 top-3 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full"
-          style={{ fontSize: fullSize ? '8px' : '6px' }}
+          className="bg-white/20 backdrop-blur-sm px-1.5 py-0.5 rounded font-bold uppercase tracking-wider text-white ml-1 flex-shrink-0"
+          style={{ fontSize: fullSize ? '7.5px' : '6px' }}
         >
           STUDENT ID
         </div>
       </div>
 
-      {/* Body */}
-      <div className="p-3 flex gap-3" style={{ height: fullSize ? '145px' : '119px' }}>
+      {/* Card Body */}
+      <div className="p-2.5 flex gap-2 flex-1 items-center" style={{ backgroundColor: style.cardBg }}>
         {/* Photo Section */}
         <div className="flex flex-col items-center flex-shrink-0">
           <div 
-            className="rounded-lg border-2 flex items-center justify-center bg-gray-100 overflow-hidden"
+            className="rounded-lg border-2 flex items-center justify-center bg-white shadow-sm overflow-hidden"
             style={{ 
-              width: fullSize ? '80px' : '65px', 
-              height: fullSize ? '95px' : '78px',
+              width: fullSize ? '75px' : '60px', 
+              height: fullSize ? '88px' : '72px',
               borderColor: style.accentColor,
             }}
           >
@@ -461,102 +525,185 @@ function ProfessionalIDCard({
               <div className="text-center">
                 <User 
                   className="mx-auto text-gray-400"
-                  style={{ width: fullSize ? '32px' : '26px', height: fullSize ? '32px' : '26px' }}
+                  style={{ width: fullSize ? '28px' : '22px', height: fullSize ? '28px' : '22px' }}
                 />
-                <p className="text-gray-400" style={{ fontSize: fullSize ? '7px' : '6px' }}>PHOTO</p>
+                <p className="text-gray-400 font-semibold" style={{ fontSize: fullSize ? '7px' : '5.5px' }}>PHOTO</p>
               </div>
             )}
           </div>
+          <p className="font-bold mt-1 text-gray-700" style={{ fontSize: fullSize ? '8px' : '6.5px' }}>
+            ROLL: {student.rollNo}
+          </p>
         </div>
 
-        {/* Info Section */}
-        <div className="flex-1 flex flex-col justify-between min-w-0">
-          {/* Student Name */}
+        {/* Student Info Section */}
+        <div className="flex-1 flex flex-col justify-between min-w-0 h-full py-0.5">
           <div>
             <p 
-              className="font-bold leading-tight truncate"
-              style={{ color: style.textColor, fontSize: fullSize ? '16px' : '13px' }}
+              className="font-extrabold leading-tight truncate uppercase"
+              style={{ color: style.textColor, fontSize: fullSize ? '14px' : '11px' }}
             >
               {student.name}
             </p>
             <p 
-              className="text-gray-500 truncate"
-              style={{ fontSize: fullSize ? '10px' : '8px' }}
+              className="text-gray-600 font-medium truncate"
+              style={{ fontSize: fullSize ? '9.5px' : '7.5px' }}
             >
               S/O: {student.fatherName}
             </p>
           </div>
 
-          {/* Details Grid */}
-          <div className="space-y-1">
-            <div className="flex gap-2">
-              <div 
-                className="bg-gray-50 rounded px-2 py-1 flex-1"
-                style={{ border: `1px solid ${style.accentColor}20` }}
-              >
-                <p className="text-gray-400" style={{ fontSize: fullSize ? '7px' : '6px' }}>CLASS</p>
-                <p className="font-bold truncate" style={{ color: style.textColor, fontSize: fullSize ? '11px' : '9px' }}>
-                  {className}
-                </p>
-              </div>
-              <div 
-                className="bg-gray-50 rounded px-2 py-1"
-                style={{ border: `1px solid ${style.accentColor}20`, minWidth: fullSize ? '50px' : '40px' }}
-              >
-                <p className="text-gray-400" style={{ fontSize: fullSize ? '7px' : '6px' }}>ROLL</p>
-                <p className="font-bold" style={{ color: style.textColor, fontSize: fullSize ? '11px' : '9px' }}>
-                  {student.rollNo}
-                </p>
-              </div>
+          <div className="space-y-0.5">
+            <div className="flex justify-between items-center bg-white px-1.5 py-0.5 rounded border border-gray-200">
+              <span className="text-gray-500 font-semibold" style={{ fontSize: fullSize ? '7.5px' : '6px' }}>CLASS:</span>
+              <span className="font-bold truncate text-gray-800" style={{ fontSize: fullSize ? '9.5px' : '7.5px' }}>{className}</span>
             </div>
             
-            {/* Contact & Session */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1 text-gray-500">
-                <Phone style={{ width: fullSize ? '10px' : '8px', height: fullSize ? '10px' : '8px' }} />
-                <span style={{ fontSize: fullSize ? '9px' : '7px' }}>{student.phone || 'N/A'}</span>
-              </div>
-              <div 
-                className="px-2 py-0.5 rounded-full text-white"
-                style={{ 
-                  background: style.headerBg, 
-                  fontSize: fullSize ? '8px' : '6px' 
-                }}
-              >
+            <div className="flex justify-between items-center bg-white px-1.5 py-0.5 rounded border border-gray-200">
+              <span className="text-gray-500 font-semibold" style={{ fontSize: fullSize ? '7.5px' : '6px' }}>PHONE:</span>
+              <span className="font-bold text-gray-800" style={{ fontSize: fullSize ? '8.5px' : '7px' }}>{student.phone || 'N/A'}</span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-gray-500 font-semibold" style={{ fontSize: fullSize ? '7px' : '5.5px' }}>SESSION:</span>
+              <span className="font-bold text-white px-1.5 py-0.2 rounded" style={{ background: style.headerBg, fontSize: fullSize ? '7.5px' : '6px' }}>
                 {session || '2025-26'}
-              </div>
+              </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* QR Code Placeholder */}
-        <div 
-          className="flex flex-col items-center justify-end flex-shrink-0"
-        >
-          <div 
-            className="bg-gray-100 rounded flex items-center justify-center border border-gray-200"
-            style={{ 
-              width: fullSize ? '50px' : '40px', 
-              height: fullSize ? '50px' : '40px' 
-            }}
-          >
-            <div className="grid grid-cols-4 gap-0.5">
-              {Array.from({ length: 16 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`${Math.random() > 0.5 ? 'bg-gray-800' : 'bg-white'}`}
-                  style={{ 
-                    width: fullSize ? '8px' : '6px', 
-                    height: fullSize ? '8px' : '6px' 
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-          <p className="text-gray-400 mt-1" style={{ fontSize: fullSize ? '6px' : '5px' }}>
-            SCAN ME
+      {/* Footer with Principal Signature */}
+      <div className="px-2 py-1 bg-white border-t border-gray-200 flex items-center justify-between">
+        <div className="text-left">
+          <p className="text-gray-400 font-mono text-[5px]" style={{ fontSize: fullSize ? '6.5px' : '5px' }}>
+            ID: {student.id ? student.id.slice(0, 8).toUpperCase() : 'STUDENT'}
           </p>
         </div>
+
+        {/* Principal Signature Display */}
+        <div className="flex flex-col items-center justify-end">
+          <div className="h-5 flex items-end justify-center min-w-[60px]">
+            {principalSignature ? (
+              <img
+                src={principalSignature}
+                alt="Principal Sign"
+                className="max-h-5 max-w-[65px] object-contain"
+              />
+            ) : (
+              <div className="w-12 border-b border-gray-400 border-dashed mb-0.5" />
+            )}
+          </div>
+          <p className="font-bold text-gray-600 uppercase tracking-tighter" style={{ fontSize: fullSize ? '6.5px' : '5.5px' }}>
+            Principal Signature
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Back Side Component
+  const BackSide = (
+    <div
+      className="bg-white rounded-xl overflow-hidden shadow-xl border border-gray-300 flex flex-col justify-between relative"
+      style={{
+        width,
+        height,
+      }}
+    >
+      {/* Header */}
+      <div
+        className="text-white px-3 py-1.5 relative flex items-center justify-between"
+        style={{ background: style.headerBg, height: fullSize ? '40px' : '34px' }}
+      >
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          {schoolLogo && (
+            <div className="w-5 h-5 bg-white/20 rounded p-0.5 flex-shrink-0 flex items-center justify-center">
+              <img src={schoolLogo} alt="Logo" className="w-full h-full object-contain" />
+            </div>
+          )}
+          <h2 className="font-bold text-white truncate" style={{ fontSize: fullSize ? '11px' : '9px' }}>
+            {schoolName || 'SCHOOL NAME'}
+          </h2>
+        </div>
+        <span className="bg-white/20 text-white font-bold px-1.5 py-0.5 rounded text-[6px]" style={{ fontSize: fullSize ? '7px' : '5.5px' }}>
+          REVERSE
+        </span>
+      </div>
+
+      {/* Back Content */}
+      <div className="p-2.5 flex-1 flex flex-col justify-between text-gray-700 leading-tight space-y-1" style={{ backgroundColor: style.cardBg }}>
+        {/* Return Notice (Required by user) */}
+        <div className="bg-red-50 border border-red-200 rounded p-1.5">
+          <p className="font-bold text-red-700 uppercase tracking-wider" style={{ fontSize: fullSize ? '7.5px' : '6px' }}>
+            IF FOUND, PLEASE RETURN TO:
+          </p>
+          <p className="font-bold text-gray-800 truncate" style={{ fontSize: fullSize ? '9px' : '7.5px' }}>
+            {schoolName || 'School Administration Office'}
+          </p>
+          {schoolAddress ? (
+            <p className="text-gray-600 line-clamp-2" style={{ fontSize: fullSize ? '7.5px' : '6px' }}>
+              Address: {schoolAddress}
+            </p>
+          ) : (
+            <p className="text-gray-500 italic" style={{ fontSize: fullSize ? '7px' : '5.5px' }}>
+              (School address not set in settings)
+            </p>
+          )}
+          {schoolPhone && (
+            <p className="text-gray-700 font-semibold" style={{ fontSize: fullSize ? '7.5px' : '6px' }}>
+              Contact: {schoolPhone}
+            </p>
+          )}
+        </div>
+
+        {/* Student Residential Address */}
+        <div className="bg-white border border-gray-200 rounded p-1">
+          <p className="text-gray-500 font-bold uppercase" style={{ fontSize: fullSize ? '6.5px' : '5px' }}>
+            Student Address:
+          </p>
+          <p className="font-medium text-gray-800 truncate" style={{ fontSize: fullSize ? '8px' : '6.5px' }}>
+            {student.address || 'As per school admission register'}
+          </p>
+        </div>
+
+        {/* Rules / Terms */}
+        <div className="bg-white border border-gray-200 rounded p-1">
+          <p className="text-gray-500 font-bold uppercase" style={{ fontSize: fullSize ? '6.5px' : '5px' }}>
+            Important Instructions:
+          </p>
+          <ul className="list-disc pl-3 text-gray-600 font-medium space-y-0.5" style={{ fontSize: fullSize ? '6.5px' : '5px' }}>
+            <li>This card is non-transferable property of the school.</li>
+            <li>Student must carry this card daily in school campus.</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Back Footer */}
+      <div className="px-2 py-1 bg-gray-100 border-t border-gray-200 flex items-center justify-between text-gray-500">
+        <span style={{ fontSize: fullSize ? '7px' : '5.5px' }}>
+          Valid For: {session || '2025-2026'}
+        </span>
+        <span style={{ fontSize: fullSize ? '7px' : '5.5px' }}>
+          Official Student Document
+        </span>
+      </div>
+    </div>
+  );
+
+  if (sideView === 'front') return FrontSide;
+  if (sideView === 'back') return BackSide;
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+      <div className="flex flex-col items-center">
+        <span className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Front Side</span>
+        {FrontSide}
+      </div>
+      <div className="flex flex-col items-center">
+        <span className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Back Side</span>
+        {BackSide}
       </div>
     </div>
   );

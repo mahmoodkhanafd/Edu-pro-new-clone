@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import {
   Home,
@@ -128,12 +128,16 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
-  const { settings, updateSettings, sidebarOpen, setSidebarOpen, currentUser } = useStore();
+  const router = useRouter();
+  const { settings, updateSettings, sidebarOpen, setSidebarOpen, currentUser, setCurrentUser } = useStore();
   const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    if (!currentUser && pathname !== '/login') {
+      router.push('/login');
+    }
     // Auto-expand active menu
     menuItems.forEach((item) => {
       if (item.children) {
@@ -143,7 +147,7 @@ export default function Layout({ children }: LayoutProps) {
         }
       }
     });
-  }, [pathname]);
+  }, [pathname, currentUser, router]);
 
   const toggleMenu = (name: string) => {
     setExpandedMenus((prev) =>
@@ -279,8 +283,8 @@ export default function Layout({ children }: LayoutProps) {
                 <Menu className="w-5 h-5 text-gray-600" />
               </button>
               <div>
-                <h2 className="font-semibold text-gray-800">{settings.schoolName}</h2>
-                <p className="text-xs text-gray-500">{settings.schoolSlogan}</p>
+                <h2 className="font-semibold text-gray-800">{settings.schoolName || 'EduPro School System'}</h2>
+                {settings.schoolSlogan && <p className="text-xs text-gray-500">{settings.schoolSlogan}</p>}
               </div>
             </div>
 
@@ -300,9 +304,16 @@ export default function Layout({ children }: LayoutProps) {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               <div className="h-8 w-px bg-gray-200"></div>
-              <button className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600">
+              <button
+                onClick={() => {
+                  setCurrentUser(null);
+                  router.push('/login');
+                }}
+                className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-red-600"
+                title="Logout"
+              >
                 <LogOut className="w-5 h-5" />
-                <span className="hidden sm:inline text-sm">Logout</span>
+                <span className="hidden sm:inline text-sm font-medium">Logout</span>
               </button>
             </div>
           </div>
