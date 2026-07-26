@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import PwaRegister from "./PwaRegister";
 
 export const metadata: Metadata = {
   title: "EduPro - School Management System",
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="apple-touch-icon" href="/Edupro_icon.jpg" />
       </head>
       <body className="bg-slate-100 text-slate-900 antialiased selection:bg-purple-500 selection:text-white">
+        <PwaRegister />
         {children}
       </body>
     </html>
