@@ -299,7 +299,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Top Header */}
-        <header className={`sticky top-0 z-30 transition-colors duration-300 shadow-sm ${settings.darkMode ? 'bg-slate-800 border-b border-slate-700 text-white' : 'bg-white text-gray-800'}`}>
+        <header className={`sticky top-0 z-40 transition-colors duration-300 shadow-sm ${settings.darkMode ? 'bg-slate-800 border-b border-slate-700 text-white' : 'bg-white text-gray-800'}`}>
           <div className="flex items-center justify-between px-4 lg:px-6 h-16">
             <div className="flex items-center gap-4">
               <button

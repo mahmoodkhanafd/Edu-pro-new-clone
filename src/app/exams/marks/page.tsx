@@ -292,21 +292,21 @@ export default function EnterMarksPage() {
           {/* Paper Selection & Manual Add Section */}
           {selClass && selExam && (
             <div className="pt-4 border-t border-gray-100 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
-                    <Sliders className="w-4 h-4 text-blue-600" />
-                    Select DMC Papers / Configure Total & Passing Marks
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-bold text-gray-800 flex items-start gap-1.5 leading-snug">
+                    <Sliders className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <span className="break-words">Select DMC Papers / Configure Total & Passing Marks</span>
                   </h3>
-                  <p className="text-xs text-gray-500">Check papers for DMC and adjust Total Marks and Passing Marks manually</p>
+                  <p className="text-xs text-gray-500 leading-snug mt-0.5">Check papers for DMC and adjust Total Marks and Passing Marks manually</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowAddPaperModal(true)}
-                  className="btn-secondary text-xs py-1.5 flex items-center gap-1 self-start sm:self-auto"
+                  className="btn-secondary text-xs py-1.5 px-2.5 flex items-center gap-1 self-start flex-shrink-0"
                 >
                   <Plus className="w-4 h-4" />
-                  + Add Manual Paper / Subject
+                  Add Manual Paper
                 </button>
               </div>
 

@@ -165,32 +165,63 @@ export async function savePdf(pdf: JsPdfLike, filename: string, category: PdfCat
 export async function elementToCanvas(element: HTMLElement, scale = 2) {
   const html2canvas = (await import('html2canvas')).default;
 
-  return html2canvas(element, {
-    scale,
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: '#ffffff',
-    logging: false,
-    imageTimeout: 15000,
-    windowWidth: element.scrollWidth,
-    windowHeight: element.scrollHeight,
-    onclone: (clonedDocument, clonedElement) => {
-      // Kill any stylesheet rule that still carries a modern colour function.
-      const reset = clonedDocument.createElement('style');
-      reset.textContent = `
-        * {
-          box-shadow: none !important;
-          text-shadow: none !important;
-          filter: none !important;
-          backdrop-filter: none !important;
-          animation: none !important;
-          transition: none !important;
-        }
-      `;
-      clonedDocument.head.appendChild(reset);
-      flattenColors(element, clonedElement as HTMLElement);
-    },
+  // html2canvas rasterises any CSS transform as-is, so a phone-scaled ID card
+  // would export as a tiny image. We temporarily reset transforms on the
+  // element + all descendants while html2canvas clones the document, then
+  // restore them.
+  const styled = new Set<HTMLElement>();
+  const collect = (root: HTMLElement) => {
+    styled.add(root);
+    root.querySelectorAll<HTMLElement>('*').forEach((node) => styled.add(node));
+  };
+  const restore = new Map<HTMLElement, { transform: string; transformOrigin: string; marginBottom: string }>();
+  collect(element);
+  styled.forEach((node) => {
+    restore.set(node, {
+      transform: node.style.transform,
+      transformOrigin: node.style.transformOrigin,
+      marginBottom: node.style.marginBottom,
+    });
+    node.style.transform = 'none';
+    node.style.transformOrigin = 'top left';
+    node.style.marginBottom = '';
   });
+
+  try {
+    return await html2canvas(element, {
+      scale,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      imageTimeout: 15000,
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
+      onclone: (clonedDocument, clonedElement) => {
+        // Kill any stylesheet rule that still carries a modern colour function.
+        const reset = clonedDocument.createElement('style');
+        reset.textContent = `
+          * {
+            box-shadow: none !important;
+            text-shadow: none !important;
+            filter: none !important;
+            backdrop-filter: none !important;
+            animation: none !important;
+            transition: none !important;
+            transform: none !important;
+          }
+        `;
+        clonedDocument.head.appendChild(reset);
+        flattenColors(element, clonedElement as HTMLElement);
+      },
+    });
+  } finally {
+    restore.forEach((values, node) => {
+      node.style.transform = values.transform;
+      node.style.transformOrigin = values.transformOrigin;
+      node.style.marginBottom = values.marginBottom;
+    });
+  }
 }
 
 export async function exportElementToA4Pdf(

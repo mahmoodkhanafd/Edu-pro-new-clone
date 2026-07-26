@@ -400,21 +400,21 @@ export default function IdCardsPage() {
         {showPreview && (
           <div className="modal-overlay print-modal" onClick={() => setShowPreview(false)}>
             <div
-              className="modal-content w-full max-w-6xl p-6 max-h-[95vh] overflow-y-auto"
+              className="modal-content w-full max-w-6xl p-4 sm:p-6 max-h-[95vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 no-print">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4 sm:mb-6 no-print">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-base sm:text-xl font-bold text-gray-800 leading-tight">
                     ID Cards Preview ({selectedStudentData.length} Students)
                   </h2>
-                  <p className="text-xs text-gray-500">Double-sided ID cards with return information & principal signature</p>
+                  <p className="text-[11px] sm:text-xs text-gray-500 leading-snug">Double-sided ID cards with return information & principal signature</p>
                 </div>
                 <div className="modal-actions">
                   <button
                     onClick={handleExportPDF}
                     disabled={generating}
-                    className="btn-success flex items-center gap-2"
+                    className="btn-success flex items-center justify-center gap-2"
                   >
                     <FileDown className="w-5 h-5" />
                     Export PDF
@@ -422,7 +422,7 @@ export default function IdCardsPage() {
                   <button
                     onClick={handlePrint}
                     disabled={printing}
-                    className="btn-primary flex items-center gap-2"
+                    className="btn-primary flex items-center justify-center gap-2"
                   >
                     {printing ? (
                       <>
@@ -443,24 +443,26 @@ export default function IdCardsPage() {
               </div>
 
               {/* Cards Grid for Printing/Export */}
-              <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-white preview-scroll">
+              <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 p-2 sm:p-4 bg-white preview-scroll">
                 {selectedStudentData.map((student) => (
                   <div key={student.id} className="id-card-item flex flex-col items-center justify-center p-2 border rounded-lg bg-gray-50">
-                    <ProfessionalIDCard
-                      student={student}
-                      template={cardTemplate}
-                      className={getClassName(student.classId)}
-                      schoolName={settings.schoolName}
-                      schoolSlogan={settings.schoolSlogan}
-                      schoolLogo={settings.schoolLogo}
-                      principalSignature={settings.principalSignature}
-                      schoolAddress={settings.schoolAddress}
-                      schoolPhone={settings.schoolPhone}
-                      schoolEmail={settings.schoolEmail}
-                      session={activeSession?.name}
-                      sideView={cardSideView}
-                      fullSize
-                    />
+                    <div className="id-card-face-wrap">
+                      <ProfessionalIDCard
+                        student={student}
+                        template={cardTemplate}
+                        className={getClassName(student.classId)}
+                        schoolName={settings.schoolName}
+                        schoolSlogan={settings.schoolSlogan}
+                        schoolLogo={settings.schoolLogo}
+                        principalSignature={settings.principalSignature}
+                        schoolAddress={settings.schoolAddress}
+                        schoolPhone={settings.schoolPhone}
+                        schoolEmail={settings.schoolEmail}
+                        session={activeSession?.name}
+                        sideView={cardSideView}
+                        fullSize
+                      />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -606,10 +608,10 @@ function ProfessionalIDCard({
       <div className="p-2.5 flex gap-2 flex-1 items-center" style={{ backgroundColor: style.cardBg }}>
         {/* Photo Section */}
         <div className="flex flex-col items-center flex-shrink-0">
-          <div 
+          <div
             className="rounded-lg border-2 flex items-center justify-center bg-white shadow-sm overflow-hidden"
-            style={{ 
-              width: fullSize ? '75px' : '60px', 
+            style={{
+              width: fullSize ? '75px' : '60px',
               height: fullSize ? '88px' : '72px',
               borderColor: style.accentColor,
             }}
@@ -622,7 +624,7 @@ function ProfessionalIDCard({
               />
             ) : (
               <div className="text-center">
-                <User 
+                <User
                   className="mx-auto text-gray-400"
                   style={{ width: fullSize ? '28px' : '22px', height: fullSize ? '28px' : '22px' }}
                 />
@@ -630,23 +632,24 @@ function ProfessionalIDCard({
               </div>
             )}
           </div>
-          {/* Principal signature sits directly UNDER the student photo */}
-          <div className="flex flex-col items-center mt-0.5" style={{ width: fullSize ? '75px' : '60px' }}>
-            <div className="flex items-end justify-center w-full" style={{ height: fullSize ? '20px' : '16px' }}>
+          {/* Principal signature sits directly UNDER the student photo.
+              Box is generously tall so the scanned signature is easy to read. */}
+          <div className="flex flex-col items-center mt-1" style={{ width: fullSize ? '75px' : '60px' }}>
+            <div className="flex items-end justify-center w-full" style={{ height: fullSize ? '26px' : '20px' }}>
               {principalSignature ? (
                 <img
                   src={principalSignature}
                   alt="Principal Sign"
                   className="object-contain"
-                  style={{ maxHeight: fullSize ? '20px' : '16px', maxWidth: '100%' }}
+                  style={{ maxHeight: fullSize ? '26px' : '20px', maxWidth: '100%' }}
                 />
               ) : (
                 <div className="w-full border-b border-gray-400 border-dashed mb-0.5" />
               )}
             </div>
             <p
-              className="font-bold text-gray-600 uppercase leading-none text-center"
-              style={{ fontSize: fullSize ? '5.5px' : '4.5px' }}
+              className="font-bold text-gray-600 uppercase leading-none text-center mt-0.5"
+              style={{ fontSize: fullSize ? '6px' : '5px' }}
             >
               Principal Sign
             </p>
@@ -803,7 +806,7 @@ function ProfessionalIDCard({
   if (sideView === 'back') return BackSide;
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
+    <div className="id-card-side-row flex flex-col sm:flex-row gap-3 items-center justify-center">
       <div className="flex flex-col items-center">
         <span className="text-[10px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Front Side</span>
         {FrontSide}
