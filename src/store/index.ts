@@ -668,6 +668,8 @@ export const useStore = create<AppState>()(
           feeParticulars: state.feeParticulars,
           gradeSettings: state.gradeSettings,
           smsTemplates: state.smsTemplates,
+          smsLogs: state.smsLogs,
+          activeSession: state.activeSession,
           settings: state.settings,
           exportDate: new Date().toISOString(),
         };
@@ -677,8 +679,10 @@ export const useStore = create<AppState>()(
       importData: (json) => {
         try {
           const data = JSON.parse(json);
+          const importedSessions = data.sessions || [];
+          const importedActiveSession = data.activeSession || importedSessions.find((session: AcademicSession) => session.isActive) || null;
           set({
-            sessions: data.sessions || [],
+            sessions: importedSessions,
             classes: data.classes || [],
             students: data.students || [],
             families: data.families || [],
@@ -694,6 +698,8 @@ export const useStore = create<AppState>()(
             feeParticulars: data.feeParticulars || defaultFeeParticulars,
             gradeSettings: data.gradeSettings || defaultGradeSettings,
             smsTemplates: data.smsTemplates || defaultSmsTemplates,
+            smsLogs: data.smsLogs || [],
+            activeSession: importedActiveSession,
             settings: { ...defaultSettings, ...data.settings },
           });
           return true;

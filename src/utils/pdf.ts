@@ -44,11 +44,80 @@ const HTML2CANVAS_SAFE_CSS = `
 `;
 
 type JsPdfOrientation = 'p' | 'portrait' | 'l' | 'landscape';
+type PdfCategory = 'dmc' | 'id-cards' | 'fee-reports';
+type JsPdfLike = {
+  save: (filename: string) => void;
+  output: (type: 'datauristring') => string;
+};
+
+const PDF_CATEGORY_DIRS: Record<PdfCategory, string> = {
+  dmc: 'DMC',
+  'id-cards': 'ID-Cards',
+  'fee-reports': 'Fee-Reports',
+};
+
+function sanitizeFilename(filename: string) {
+  return filename.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim() || 'edupro.pdf';
+}
+
+async function isCapacitorAndroid() {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    const { Capacitor } = await import('@capacitor/core');
+    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  } catch {
+    return false;
+  }
+}
+
+async function ensurePdfDirectory(path: string) {
+  const { Filesystem, Directory } = await import('@capacitor/filesystem');
+
+  try {
+    await Filesystem.mkdir({ path, directory: Directory.Documents, recursive: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.toLowerCase().includes('exist')) {
+      await Filesystem.stat({ path, directory: Directory.Documents });
+    }
+  }
+}
 
 export async function createA4Pdf(orientation: JsPdfOrientation = 'p') {
   const jsPDFModule = await import('jspdf');
   const JsPDF = ((jsPDFModule as any).jsPDF || jsPDFModule.default) as typeof jsPDFModule.default;
   return new JsPDF(orientation, 'mm', 'a4');
+}
+
+export async function savePdf(
+  pdf: JsPdfLike,
+  filename: string,
+  category: PdfCategory
+) {
+  const safeFilename = sanitizeFilename(filename);
+
+  if (!(await isCapacitorAndroid())) {
+    pdf.save(safeFilename);
+    return { platform: 'browser' as const, path: safeFilename };
+  }
+
+  const { Filesystem, Directory } = await import('@capacitor/filesystem');
+  const dir = `EduPro/PDF/${PDF_CATEGORY_DIRS[category]}`;
+  await ensurePdfDirectory(dir);
+
+  const dataUri = pdf.output('datauristring');
+  const base64Data = dataUri.includes(',') ? dataUri.split(',')[1] : dataUri;
+  const path = `${dir}/${safeFilename}`;
+
+  await Filesystem.writeFile({
+    path,
+    directory: Directory.Documents,
+    data: base64Data,
+    recursive: true,
+  });
+
+  return { platform: 'android' as const, path: `Documents/${path}` };
 }
 
 export async function elementToCanvas(element: HTMLElement, scale = 2) {
@@ -76,7 +145,7 @@ export async function elementToCanvas(element: HTMLElement, scale = 2) {
 export async function exportElementToA4Pdf(
   element: HTMLElement,
   filename: string,
-  options: { orientation?: JsPdfOrientation; marginMm?: number; scale?: number } = {}
+  options: { orientation?: JsPdfOrientation; marginMm?: number; scale?: number; category?: PdfCategory } = {}
 ) {
   const pdf = await createA4Pdf(options.orientation || 'p');
   const canvas = await elementToCanvas(element, options.scale || 2);
@@ -121,5 +190,5 @@ export async function exportElementToA4Pdf(
     }
   }
 
-  pdf.save(filename);
+  await savePdf(pdf, filename, options.category || 'dmc');
 }

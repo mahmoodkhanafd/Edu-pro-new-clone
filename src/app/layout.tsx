@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import PwaRegister from "./PwaRegister";
+import CloudSync from "./CloudSync";
 
 export const metadata: Metadata = {
   title: "EduPro - School Management System",
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className="bg-slate-100 text-slate-900 antialiased selection:bg-purple-500 selection:text-white">
         <PwaRegister />
+        <CloudSync />
         {children}
       </body>
     </html>
