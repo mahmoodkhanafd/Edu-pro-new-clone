@@ -238,7 +238,7 @@ export default function StudentsPage() {
                               <Eye className="w-4 h-4 text-gray-500" />
                             </button>
                             <Link
-                              href={`/students/edit/${student.id}`}
+                              href={`/students/edit?id=${student.id}`}
                               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                               title="Edit"
                             >
@@ -400,7 +400,7 @@ export default function StudentsPage() {
                   Collect Fee
                 </Link>
                 <Link
-                  href={`/students/edit/${selectedStudentData.id}`}
+                  href={`/students/edit?id=${selectedStudentData.id}`}
                   className="btn-secondary flex-1 text-center"
                 >
                   Edit Student

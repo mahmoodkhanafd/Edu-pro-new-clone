@@ -234,11 +234,11 @@ interface AppState {
   
   // UI State
   sidebarOpen: boolean;
-  currentUser: { id: string; name: string; role: string } | null;
+  currentUser: { id: string; name: string; role: string; email?: string; photo?: string; provider?: 'credentials' | 'google' | 'guest' } | null;
   
   // Actions
   setSidebarOpen: (open: boolean) => void;
-  setCurrentUser: (user: { id: string; name: string; role: string } | null) => void;
+  setCurrentUser: (user: { id: string; name: string; role: string; email?: string; photo?: string; provider?: 'credentials' | 'google' | 'guest' } | null) => void;
   
   // Session Actions
   addSession: (session: AcademicSession) => void;

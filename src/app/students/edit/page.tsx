@@ -3,20 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useStore } from '@/store';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Save, ArrowLeft, Camera } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EditStudentPage() {
   const router = useRouter();
-  const params = useParams();
-  const studentId = params.id as string;
+  const [studentId, setStudentId] = useState('');
   const { students, classes, families, updateStudent } = useStore();
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({ name: '', fatherName: '', dob: '', gender: '', phone: '', whatsapp: '', address: '', photo: '', classId: '', rollNo: '', familyId: '', admissionDate: '', monthlyFee: '', totalFee: '' });
 
   useEffect(() => {
+    setStudentId(new URLSearchParams(window.location.search).get('id') || '');
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!studentId) return;
     const s = students.find(s => s.id === studentId);
     if (s) setFormData({ name: s.name||'', fatherName: s.fatherName||'', dob: s.dob||'', gender: s.gender||'', phone: s.phone||'', whatsapp: s.whatsapp||'', address: s.address||'', photo: s.photo||'', classId: s.classId||'', rollNo: s.rollNo||'', familyId: s.familyId||'', admissionDate: s.admissionDate||'', monthlyFee: String(s.monthlyFee||''), totalFee: String(s.totalFee||'') });
   }, [studentId, students]);
@@ -36,7 +40,7 @@ export default function EditStudentPage() {
     router.push('/students');
   };
 
-  if (!mounted) return <Layout><div className="flex items-center justify-center min-h-[60vh]"><div className="spinner"></div></div></Layout>;
+  if (!mounted || !studentId) return <Layout><div className="flex items-center justify-center min-h-[60vh]"><div className="spinner"></div></div></Layout>;
   const student = students.find(s => s.id === studentId);
   if (!student) return <Layout><div className="text-center py-12"><h2 className="text-xl font-bold text-gray-800">Student Not Found</h2><Link href="/students" className="text-blue-600 hover:underline mt-4 inline-block">Back</Link></div></Layout>;
 
