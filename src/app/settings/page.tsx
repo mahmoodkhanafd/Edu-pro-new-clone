@@ -42,6 +42,21 @@ export default function SettingsPage() {
     settings.schoolEmail,
   ]);
 
+  /**
+   * Persists whatever the user has typed so far. Called before an image upload
+   * so typed-but-unsaved school data is never lost when the logo/signature
+   * re-renders the form.
+   */
+  const persistFormData = () => {
+    updateSettings({
+      schoolName: formData.schoolName,
+      schoolSlogan: formData.schoolSlogan,
+      schoolAddress: formData.schoolAddress,
+      schoolPhone: formData.schoolPhone,
+      schoolEmail: formData.schoolEmail,
+    });
+  };
+
   const handleSave = () => {
     updateSettings({
       schoolName: formData.schoolName,
@@ -197,9 +212,10 @@ export default function SettingsPage() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
+                          persistFormData();
                           const reader = new FileReader();
                           reader.onload = (event) => {
-                            updateSettings({ ...formData, schoolLogo: event.target?.result as string });
+                            updateSettings({ schoolLogo: event.target?.result as string });
                           };
                           reader.readAsDataURL(file);
                         }
@@ -209,7 +225,7 @@ export default function SettingsPage() {
                   {settings.schoolLogo && (
                     <button
                       type="button"
-                      onClick={() => updateSettings({ ...formData, schoolLogo: '' })}
+                      onClick={() => updateSettings({ schoolLogo: '' })}
                       className="text-xs text-red-600 hover:underline block"
                     >
                       Remove Logo
@@ -248,9 +264,10 @@ export default function SettingsPage() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
+                          persistFormData();
                           const reader = new FileReader();
                           reader.onload = (event) => {
-                            updateSettings({ ...formData, principalSignature: event.target?.result as string });
+                            updateSettings({ principalSignature: event.target?.result as string });
                           };
                           reader.readAsDataURL(file);
                         }
@@ -260,7 +277,7 @@ export default function SettingsPage() {
                   {settings.principalSignature && (
                     <button
                       type="button"
-                      onClick={() => updateSettings({ ...formData, principalSignature: '' })}
+                      onClick={() => updateSettings({ principalSignature: '' })}
                       className="text-xs text-red-600 hover:underline block"
                     >
                       Remove Signature

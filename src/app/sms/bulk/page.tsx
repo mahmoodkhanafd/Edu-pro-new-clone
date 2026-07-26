@@ -177,6 +177,29 @@ export default function BulkSmsPage() {
     }
   };
 
+  /**
+   * Opens the correct messaging app.
+   * SMS previously did nothing because only the WhatsApp branch existed; the
+   * `sms:` URI scheme launches the phone's default SMS app (Android uses `?body=`).
+   */
+  const openMessagingApp = (type: string, rawPhone: string | undefined, message: string) => {
+    const digits = (rawPhone || '').replace(/\D/g, '');
+    if (!digits) {
+      alert('This student has no phone number saved.');
+      return;
+    }
+
+    if (type === 'whatsapp') {
+      window.open(`https://wa.me/${digits}?text=${encodeURIComponent(message)}`, '_blank');
+      return;
+    }
+
+    // SMS: `?body=` works on Android, `&body=` on iOS.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const separator = isIOS ? '&' : '?';
+    window.location.href = `sms:${digits}${separator}body=${encodeURIComponent(message)}`;
+  };
+
   // Send bulk messages
   const handleSendBulk = async () => {
     if (selectedStudents.length === 0) {
@@ -217,15 +240,13 @@ export default function BulkSmsPage() {
 
     setSending(false);
     
-    // Open bulk WhatsApp/SMS for first selected student to initiate
+    // Open WhatsApp or the phone's SMS app for the first selected student.
     if (selectedStudents.length > 0) {
       const firstStudent = studentsWithInfo.find(s => s.id === selectedStudents[0]);
       if (firstStudent) {
         const message = generateMessage(firstStudent);
         const phone = firstStudent.whatsapp || firstStudent.phone;
-        if (notificationType === 'whatsapp') {
-          window.open(`https://wa.me/${phone?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
-        }
+        openMessagingApp(notificationType, phone, message);
       }
     }
 

@@ -1,50 +1,94 @@
-const HTML2CANVAS_SAFE_CSS = `
-.html2canvas-safe-root,
-.html2canvas-safe-root * {
-  text-shadow: none !important;
-  box-shadow: none !important;
+/**
+ * PDF + print helpers for EduPro.
+ *
+ * IMPORTANT: Tailwind v4 emits modern CSS colour functions (`oklch()`, `lab()`,
+ * `oklab()`, `color-mix()`). html2canvas cannot parse these and throws
+ * "Attempting to parse an unsupported color function", which is why every PDF
+ * export used to fail. Before rasterising we walk the cloned document and
+ * flatten every computed colour to a plain `rgb()` string, which html2canvas
+ * always understands.
+ */
+
+const COLOR_PROPS = [
+  'color',
+  'backgroundColor',
+  'borderTopColor',
+  'borderRightColor',
+  'borderBottomColor',
+  'borderLeftColor',
+  'outlineColor',
+  'textDecorationColor',
+  'columnRuleColor',
+  'caretColor',
+  'fill',
+  'stroke',
+] as const;
+
+const UNSUPPORTED_COLOR = /(oklch|oklab|lch|lab|color-mix|color\()/i;
+
+/** Resolves any CSS colour (including oklch/lab/color-mix) to `rgb()` via the browser. */
+function toRgb(value: string, fallback: string): string {
+  if (!value) return fallback;
+  if (!UNSUPPORTED_COLOR.test(value)) return value;
+
+  try {
+    const probe = document.createElement('span');
+    probe.style.display = 'none';
+    probe.style.color = value;
+    document.body.appendChild(probe);
+    const resolved = getComputedStyle(probe).color;
+    document.body.removeChild(probe);
+    if (resolved && !UNSUPPORTED_COLOR.test(resolved)) return resolved;
+  } catch {
+    /* fall through to fallback */
+  }
+
+  return fallback;
 }
-.html2canvas-safe-root .text-white { color: #ffffff !important; }
-.html2canvas-safe-root .text-gray-300 { color: #d1d5db !important; }
-.html2canvas-safe-root .text-gray-400 { color: #9ca3af !important; }
-.html2canvas-safe-root .text-gray-500 { color: #6b7280 !important; }
-.html2canvas-safe-root .text-gray-600 { color: #4b5563 !important; }
-.html2canvas-safe-root .text-gray-700 { color: #374151 !important; }
-.html2canvas-safe-root .text-gray-800 { color: #1f2937 !important; }
-.html2canvas-safe-root .text-blue-400 { color: #60a5fa !important; }
-.html2canvas-safe-root .text-blue-500 { color: #3b82f6 !important; }
-.html2canvas-safe-root .text-blue-600 { color: #2563eb !important; }
-.html2canvas-safe-root .text-blue-700 { color: #1d4ed8 !important; }
-.html2canvas-safe-root .text-green-400 { color: #4ade80 !important; }
-.html2canvas-safe-root .text-green-500 { color: #22c55e !important; }
-.html2canvas-safe-root .text-green-600 { color: #16a34a !important; }
-.html2canvas-safe-root .text-green-700 { color: #15803d !important; }
-.html2canvas-safe-root .text-red-400 { color: #f87171 !important; }
-.html2canvas-safe-root .text-red-500 { color: #ef4444 !important; }
-.html2canvas-safe-root .text-red-600 { color: #dc2626 !important; }
-.html2canvas-safe-root .text-red-700 { color: #b91c1c !important; }
-.html2canvas-safe-root .text-orange-400 { color: #fb923c !important; }
-.html2canvas-safe-root .text-orange-500 { color: #f97316 !important; }
-.html2canvas-safe-root .text-orange-600 { color: #ea580c !important; }
-.html2canvas-safe-root .text-purple-600 { color: #9333ea !important; }
-.html2canvas-safe-root .bg-white { background-color: #ffffff !important; }
-.html2canvas-safe-root .bg-gray-50 { background-color: #f9fafb !important; }
-.html2canvas-safe-root .bg-gray-100 { background-color: #f3f4f6 !important; }
-.html2canvas-safe-root .bg-gray-800 { background-color: #1f2937 !important; }
-.html2canvas-safe-root .bg-blue-50 { background-color: #eff6ff !important; }
-.html2canvas-safe-root .bg-blue-100 { background-color: #dbeafe !important; }
-.html2canvas-safe-root .bg-green-50 { background-color: #f0fdf4 !important; }
-.html2canvas-safe-root .bg-red-50 { background-color: #fef2f2 !important; }
-.html2canvas-safe-root .bg-orange-50 { background-color: #fff7ed !important; }
-.html2canvas-safe-root .border-gray-100 { border-color: #f3f4f6 !important; }
-.html2canvas-safe-root .border-gray-200 { border-color: #e5e7eb !important; }
-.html2canvas-safe-root .border-gray-300 { border-color: #d1d5db !important; }
-.html2canvas-safe-root .border-gray-400 { border-color: #9ca3af !important; }
-.html2canvas-safe-root .border-red-200 { border-color: #fecaca !important; }
-`;
+
+/**
+ * Copies every *computed* colour from the live element tree onto the cloned
+ * tree as an inline `rgb()` value, then strips shadows/filters that html2canvas
+ * renders poorly. This makes the capture pixel-faithful and crash free.
+ */
+function flattenColors(source: HTMLElement, clone: HTMLElement) {
+  const sourceNodes = [source, ...Array.from(source.querySelectorAll<HTMLElement>('*'))];
+  const cloneNodes = [clone, ...Array.from(clone.querySelectorAll<HTMLElement>('*'))];
+  const count = Math.min(sourceNodes.length, cloneNodes.length);
+
+  for (let i = 0; i < count; i++) {
+    const computed = getComputedStyle(sourceNodes[i]);
+    const target = cloneNodes[i];
+
+    for (const prop of COLOR_PROPS) {
+      const value = computed[prop as keyof CSSStyleDeclaration] as string | undefined;
+      if (!value || value === 'none') continue;
+      // Computed styles are already resolved by the browser, but Chrome can
+      // still hand back oklch() for custom properties, so normalise again.
+      const safe = toRgb(value, prop === 'color' ? '#111827' : 'transparent');
+      try {
+        target.style[prop as never] = safe as never;
+      } catch {
+        /* ignore read-only props */
+      }
+    }
+
+    // Gradients / shadows / filters frequently contain unsupported colours.
+    const bgImage = computed.backgroundImage;
+    if (bgImage && bgImage !== 'none' && UNSUPPORTED_COLOR.test(bgImage)) {
+      target.style.backgroundImage = 'none';
+    }
+    target.style.boxShadow = 'none';
+    target.style.textShadow = 'none';
+    target.style.filter = 'none';
+    target.style.backdropFilter = 'none';
+    target.style.animation = 'none';
+    target.style.transition = 'none';
+  }
+}
 
 type JsPdfOrientation = 'p' | 'portrait' | 'l' | 'landscape';
-type PdfCategory = 'dmc' | 'id-cards' | 'fee-reports';
+type PdfCategory = 'dmc' | 'id-cards' | 'fee-reports' | 'receipts';
 type JsPdfLike = {
   save: (filename: string) => void;
   output: (type: 'datauristring') => string;
@@ -54,6 +98,7 @@ const PDF_CATEGORY_DIRS: Record<PdfCategory, string> = {
   dmc: 'DMC',
   'id-cards': 'ID-Cards',
   'fee-reports': 'Fee-Reports',
+  receipts: 'Receipts',
 };
 
 function sanitizeFilename(filename: string) {
@@ -90,11 +135,7 @@ export async function createA4Pdf(orientation: JsPdfOrientation = 'p') {
   return new JsPDF(orientation, 'mm', 'a4');
 }
 
-export async function savePdf(
-  pdf: JsPdfLike,
-  filename: string,
-  category: PdfCategory
-) {
+export async function savePdf(pdf: JsPdfLike, filename: string, category: PdfCategory) {
   const safeFilename = sanitizeFilename(filename);
 
   if (!(await isCapacitorAndroid())) {
@@ -120,32 +161,47 @@ export async function savePdf(
   return { platform: 'android' as const, path: `Documents/${path}` };
 }
 
+/** Rasterises an element, neutralising Tailwind v4 colours first. */
 export async function elementToCanvas(element: HTMLElement, scale = 2) {
   const html2canvas = (await import('html2canvas')).default;
-  element.classList.add('html2canvas-safe-root');
 
-  try {
-    return await html2canvas(element, {
-      scale,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      onclone: (clonedDocument) => {
-        const style = clonedDocument.createElement('style');
-        style.textContent = HTML2CANVAS_SAFE_CSS;
-        clonedDocument.head.appendChild(style);
-      },
-    });
-  } finally {
-    element.classList.remove('html2canvas-safe-root');
-  }
+  return html2canvas(element, {
+    scale,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#ffffff',
+    logging: false,
+    imageTimeout: 15000,
+    windowWidth: element.scrollWidth,
+    windowHeight: element.scrollHeight,
+    onclone: (clonedDocument, clonedElement) => {
+      // Kill any stylesheet rule that still carries a modern colour function.
+      const reset = clonedDocument.createElement('style');
+      reset.textContent = `
+        * {
+          box-shadow: none !important;
+          text-shadow: none !important;
+          filter: none !important;
+          backdrop-filter: none !important;
+          animation: none !important;
+          transition: none !important;
+        }
+      `;
+      clonedDocument.head.appendChild(reset);
+      flattenColors(element, clonedElement as HTMLElement);
+    },
+  });
 }
 
 export async function exportElementToA4Pdf(
   element: HTMLElement,
   filename: string,
-  options: { orientation?: JsPdfOrientation; marginMm?: number; scale?: number; category?: PdfCategory } = {}
+  options: {
+    orientation?: JsPdfOrientation;
+    marginMm?: number;
+    scale?: number;
+    category?: PdfCategory;
+  } = {}
 ) {
   const pdf = await createA4Pdf(options.orientation || 'p');
   const canvas = await elementToCanvas(element, options.scale || 2);
@@ -170,6 +226,8 @@ export async function exportElementToA4Pdf(
       pageCanvas.height = Math.min(sourcePageHeight, canvas.height - sourceY);
       const ctx = pageCanvas.getContext('2d');
       if (!ctx) throw new Error('Could not create PDF canvas context');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
       ctx.drawImage(
         canvas,
         0,
@@ -190,5 +248,85 @@ export async function exportElementToA4Pdf(
     }
   }
 
-  await savePdf(pdf, filename, options.category || 'dmc');
+  return savePdf(pdf, filename, options.category || 'dmc');
+}
+
+/**
+ * Reliable print for web *and* Android WebView.
+ *
+ * `window.print()` inside a Capacitor WebView prints the whole scrolled page
+ * (the list behind the modal) instead of the receipt/DMC/ID card. Instead we
+ * rasterise just the target element and hand a clean, isolated A4 document to
+ * the print pipeline, so the preview always shows exactly the document.
+ */
+export async function printElement(
+  element: HTMLElement,
+  title = 'EduPro Document',
+  options: { orientation?: 'portrait' | 'landscape'; scale?: number } = {}
+) {
+  const orientation = options.orientation || 'portrait';
+  const canvas = await elementToCanvas(element, options.scale || 2);
+  const dataUrl = canvas.toDataURL('image/png');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${title.replace(/[<>]/g, '')}</title>
+<style>
+  @page { size: A4 ${orientation}; margin: 8mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #ffffff; width: 100%; }
+  body { display: flex; align-items: flex-start; justify-content: center; }
+  img { display: block; width: 100%; height: auto; max-width: 194mm; }
+  @media print { body { display: block; } img { width: 100%; } }
+</style>
+</head>
+<body><img src="${dataUrl}" alt="${title.replace(/[<>"]/g, '')}" /></body>
+</html>`;
+
+  // Prefer a hidden iframe: it works in Android WebView and avoids popup blockers.
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.opacity = '0';
+  document.body.appendChild(iframe);
+
+  await new Promise<void>((resolve) => {
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      resolve();
+      return;
+    }
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    const image = doc.querySelector('img');
+    const fire = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (error) {
+        console.error('Print failed:', error);
+      }
+      resolve();
+    };
+
+    if (image && !image.complete) {
+      image.addEventListener('load', fire, { once: true });
+      image.addEventListener('error', fire, { once: true });
+    } else {
+      setTimeout(fire, 120);
+    }
+  });
+
+  // Give the print dialog time to grab the document before cleanup.
+  setTimeout(() => iframe.remove(), 60000);
 }

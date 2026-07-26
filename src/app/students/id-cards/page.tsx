@@ -13,7 +13,7 @@ import {
   CheckSquare,
   Square,
 } from 'lucide-react';
-import { createA4Pdf, elementToCanvas, savePdf } from '@/utils/pdf';
+import { createA4Pdf, elementToCanvas, savePdf, printElement } from '@/utils/pdf';
 
 export default function IdCardsPage() {
   const { students, classes, settings, activeSession } = useStore();
@@ -61,8 +61,21 @@ export default function IdCardsPage() {
     return cls ? `${cls.name}${cls.section ? ` - ${cls.section}` : ''}` : 'Unknown';
   };
 
-  const handlePrint = () => {
-    window.print();
+  const [printing, setPrinting] = useState(false);
+
+  // Print only the ID card sheet, never the page behind the modal.
+  const handlePrint = async () => {
+    const sourceElement = printRef.current || exportRef.current;
+    if (!sourceElement) return;
+    setPrinting(true);
+    try {
+      await printElement(sourceElement, 'Student-ID-Cards', { orientation: 'portrait', scale: 2 });
+    } catch (error) {
+      console.error('Print failed:', error);
+      alert('Print failed. Please try Export PDF instead.');
+    } finally {
+      setPrinting(false);
+    }
   };
 
   const handleExportPDF = async () => {
@@ -374,9 +387,22 @@ export default function IdCardsPage() {
                     <FileDown className="w-5 h-5" />
                     Export PDF
                   </button>
-                  <button onClick={handlePrint} className="btn-primary flex items-center gap-2">
-                    <Printer className="w-5 h-5" />
-                    Print
+                  <button
+                    onClick={handlePrint}
+                    disabled={printing}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    {printing ? (
+                      <>
+                        <div className="spinner w-4 h-4 border-white"></div>
+                        Preparing...
+                      </>
+                    ) : (
+                      <>
+                        <Printer className="w-5 h-5" />
+                        Print
+                      </>
+                    )}
                   </button>
                   <button onClick={() => setShowPreview(false)} className="btn-secondary">
                     Close
@@ -385,7 +411,7 @@ export default function IdCardsPage() {
               </div>
 
               {/* Cards Grid for Printing/Export */}
-              <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 print-content p-4 bg-white">
+              <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-white preview-scroll">
                 {selectedStudentData.map((student) => (
                   <div key={student.id} className="id-card-item flex flex-col items-center justify-center p-2 border rounded-lg bg-gray-50">
                     <ProfessionalIDCard
@@ -475,16 +501,20 @@ function ProfessionalIDCard({
   const width = fullSize ? '340px' : '280px';
   const height = fullSize ? '215px' : '177px';
   const displaySchoolName = schoolName || 'SCHOOL NAME';
-  const frontSchoolFontSize = displaySchoolName.length > 50
-    ? (fullSize ? '8px' : '6.5px')
-    : displaySchoolName.length > 36
-      ? (fullSize ? '9.5px' : '7.5px')
-      : (fullSize ? '13px' : '10px');
-  const backSchoolFontSize = displaySchoolName.length > 50
-    ? (fullSize ? '8px' : '6.5px')
-    : displaySchoolName.length > 36
-      ? (fullSize ? '9px' : '7px')
-      : (fullSize ? '11px' : '9px');
+
+  /**
+   * Auto-shrink the school name so long names always fit the header instead of
+   * being cut off with "...". Scales smoothly from 14px down to 6px.
+   */
+  const autoFitFont = (text: string, max: number, min: number, idealChars: number) => {
+    const len = Math.max(text.trim().length, 1);
+    if (len <= idealChars) return max;
+    const scaled = max * Math.sqrt(idealChars / len);
+    return Math.max(min, Math.round(scaled * 10) / 10);
+  };
+
+  const frontSchoolFontSize = `${autoFitFont(displaySchoolName, fullSize ? 14 : 11, fullSize ? 6.5 : 5.5, 22)}px`;
+  const backSchoolFontSize = `${autoFitFont(displaySchoolName, fullSize ? 11.5 : 9, fullSize ? 6 : 5, 24)}px`;
 
   // Front Side Component
   const FrontSide = (
@@ -568,9 +598,27 @@ function ProfessionalIDCard({
               </div>
             )}
           </div>
-          <p className="font-bold mt-1 text-gray-700" style={{ fontSize: fullSize ? '8px' : '6.5px' }}>
-            ROLL: {student.rollNo}
-          </p>
+          {/* Principal signature sits directly UNDER the student photo */}
+          <div className="flex flex-col items-center mt-0.5" style={{ width: fullSize ? '75px' : '60px' }}>
+            <div className="flex items-end justify-center w-full" style={{ height: fullSize ? '20px' : '16px' }}>
+              {principalSignature ? (
+                <img
+                  src={principalSignature}
+                  alt="Principal Sign"
+                  className="object-contain"
+                  style={{ maxHeight: fullSize ? '20px' : '16px', maxWidth: '100%' }}
+                />
+              ) : (
+                <div className="w-full border-b border-gray-400 border-dashed mb-0.5" />
+              )}
+            </div>
+            <p
+              className="font-bold text-gray-600 uppercase leading-none text-center"
+              style={{ fontSize: fullSize ? '5.5px' : '4.5px' }}
+            >
+              Principal Sign
+            </p>
+          </div>
         </div>
 
         {/* Student Info Section */}
@@ -582,27 +630,34 @@ function ProfessionalIDCard({
             >
               {student.name}
             </p>
-            <p 
-              className="text-gray-600 font-medium truncate"
-              style={{ fontSize: fullSize ? '9.5px' : '7.5px' }}
+            <p
+              className="font-medium truncate"
+              style={{ fontSize: fullSize ? '9.5px' : '7.5px', color: '#374151' }}
             >
               S/O: {student.fatherName}
+            </p>
+            {/* Roll number now sits directly under the father name */}
+            <p
+              className="font-bold"
+              style={{ fontSize: fullSize ? '9.5px' : '7.5px', color: style.textColor }}
+            >
+              ROLL NO: {student.rollNo}
             </p>
           </div>
 
           <div className="space-y-0.5">
             <div className="flex justify-between items-center bg-white px-1.5 py-0.5 rounded border border-gray-200">
-              <span className="text-gray-500 font-semibold" style={{ fontSize: fullSize ? '7.5px' : '6px' }}>CLASS:</span>
+              <span className="font-semibold" style={{ fontSize: fullSize ? '7.5px' : '6px', color: '#374151' }}>CLASS:</span>
               <span className="font-bold truncate text-gray-800" style={{ fontSize: fullSize ? '9.5px' : '7.5px' }}>{className}</span>
             </div>
             
             <div className="flex justify-between items-center bg-white px-1.5 py-0.5 rounded border border-gray-200">
-              <span className="text-gray-500 font-semibold" style={{ fontSize: fullSize ? '7.5px' : '6px' }}>PHONE:</span>
+              <span className="font-semibold" style={{ fontSize: fullSize ? '7.5px' : '6px', color: '#374151' }}>PHONE:</span>
               <span className="font-bold text-gray-800" style={{ fontSize: fullSize ? '8.5px' : '7px' }}>{student.phone || 'N/A'}</span>
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-gray-500 font-semibold" style={{ fontSize: fullSize ? '7px' : '5.5px' }}>SESSION:</span>
+              <span className="font-semibold" style={{ fontSize: fullSize ? '7px' : '5.5px', color: '#374151' }}>SESSION:</span>
               <span className="font-bold text-white px-1.5 py-0.2 rounded" style={{ background: style.headerBg, fontSize: fullSize ? '7.5px' : '6px' }}>
                 {session || '2025-26'}
               </span>
@@ -611,31 +666,14 @@ function ProfessionalIDCard({
         </div>
       </div>
 
-      {/* Footer with Principal Signature */}
+      {/* Footer (signature moved under the photo as requested) */}
       <div className="px-2 py-1 bg-white border-t border-gray-200 flex items-center justify-between">
-        <div className="text-left">
-          <p className="text-gray-400 font-mono text-[5px]" style={{ fontSize: fullSize ? '6.5px' : '5px' }}>
-            ID: {student.id ? student.id.slice(0, 8).toUpperCase() : 'STUDENT'}
-          </p>
-        </div>
-
-        {/* Principal Signature Display */}
-        <div className="flex flex-col items-center justify-end">
-          <div className="h-5 flex items-end justify-center min-w-[60px]">
-            {principalSignature ? (
-              <img
-                src={principalSignature}
-                alt="Principal Sign"
-                className="max-h-5 max-w-[65px] object-contain"
-              />
-            ) : (
-              <div className="w-12 border-b border-gray-400 border-dashed mb-0.5" />
-            )}
-          </div>
-          <p className="font-bold text-gray-600 uppercase tracking-tighter" style={{ fontSize: fullSize ? '6.5px' : '5.5px' }}>
-            Principal Signature
-          </p>
-        </div>
+        <p className="font-mono" style={{ fontSize: fullSize ? '6.5px' : '5px', color: '#6b7280' }}>
+          ID: {student.id ? student.id.slice(0, 8).toUpperCase() : 'STUDENT'}
+        </p>
+        <p className="font-semibold uppercase tracking-wide" style={{ fontSize: fullSize ? '6.5px' : '5px', color: '#4b5563' }}>
+          {session || '2025-26'}
+        </p>
       </div>
     </div>
   );
@@ -680,7 +718,7 @@ function ProfessionalIDCard({
             {displaySchoolName || 'School Administration Office'}
           </p>
           {schoolAddress ? (
-            <p className="text-gray-600 line-clamp-2" style={{ fontSize: fullSize ? '7.5px' : '6px' }}>
+            <p className="line-clamp-2" style={{ fontSize: fullSize ? '7.5px' : '6px', color: '#374151' }}>
               Address: {schoolAddress}
             </p>
           ) : (
@@ -697,7 +735,7 @@ function ProfessionalIDCard({
 
         {/* Student Residential Address */}
         <div className="bg-white border border-gray-200 rounded p-1">
-          <p className="text-gray-500 font-bold uppercase" style={{ fontSize: fullSize ? '6.5px' : '5px' }}>
+          <p className="font-bold uppercase" style={{ fontSize: fullSize ? '6.5px' : '5px', color: '#374151' }}>
             Student Address:
           </p>
           <p className="font-medium text-gray-800 truncate" style={{ fontSize: fullSize ? '8px' : '6.5px' }}>
@@ -707,10 +745,10 @@ function ProfessionalIDCard({
 
         {/* Rules / Terms */}
         <div className="bg-white border border-gray-200 rounded p-1">
-          <p className="text-gray-500 font-bold uppercase" style={{ fontSize: fullSize ? '6.5px' : '5px' }}>
+          <p className="font-bold uppercase" style={{ fontSize: fullSize ? '6.5px' : '5px', color: '#374151' }}>
             Important Instructions:
           </p>
-          <ul className="list-disc pl-3 text-gray-600 font-medium space-y-0.5" style={{ fontSize: fullSize ? '6.5px' : '5px' }}>
+          <ul className="list-disc pl-3 font-medium space-y-0.5" style={{ fontSize: fullSize ? '6.5px' : '5px', color: '#374151' }}>
             <li>This card is non-transferable property of the school.</li>
             <li>Student must carry this card daily in school campus.</li>
           </ul>
@@ -718,7 +756,7 @@ function ProfessionalIDCard({
       </div>
 
       {/* Back Footer */}
-      <div className="px-2 py-1 bg-gray-100 border-t border-gray-200 flex items-center justify-between text-gray-500">
+      <div className="px-2 py-1 bg-gray-100 border-t border-gray-200 flex items-center justify-between" style={{ color: '#374151' }}>
         <span style={{ fontSize: fullSize ? '7px' : '5.5px' }}>
           Valid For: {session || '2025-2026'}
         </span>

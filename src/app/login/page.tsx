@@ -4,6 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
 import { restoreOrCreateGoogleCloudBackup } from '@/utils/cloudBackup';
+import {
+  getGoogleClientId,
+  setGoogleClientId,
+  loadGoogleIdentityScript,
+  fetchGoogleProfile,
+} from '@/utils/googleAuth';
 declare global {
   interface Window {
     google?: {
@@ -47,6 +53,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
+  const [showClientIdSetup, setShowClientIdSetup] = useState(false);
+  const [clientIdInput, setClientIdInput] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -55,41 +63,21 @@ export default function LoginPage() {
     }
   }, [currentUser, router]);
 
-  const loadGoogleIdentityScript = () => {
-    return new Promise<void>((resolve, reject) => {
-      if (window.google?.accounts?.oauth2) {
-        resolve();
-        return;
-      }
-
-      const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
-      if (existingScript) {
-        existingScript.addEventListener('load', () => resolve(), { once: true });
-        existingScript.addEventListener('error', () => reject(new Error('Google sign-in script failed to load')), { once: true });
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Google sign-in script failed to load'));
-      document.head.appendChild(script);
-    });
-  };
-
   // Real Google permission popup through Google Identity Services.
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = async (overrideClientId?: string) => {
     setError('');
+
+    const clientId = (overrideClientId || getGoogleClientId()).trim();
+    if (!clientId) {
+      // No build-time env in an APK, so let the user paste their own Client ID once.
+      setShowClientIdSetup(true);
+      setError('Add your Google OAuth Client ID once to enable real Google sign-in.');
+      return;
+    }
+
     setGoogleLoading(true);
 
     try {
-      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-      if (!clientId) {
-        throw new Error('Google Client ID is missing. Set NEXT_PUBLIC_GOOGLE_CLIENT_ID to enable real Google sign-in.');
-      }
-
       await loadGoogleIdentityScript();
 
       const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
@@ -103,30 +91,19 @@ export default function LoginPage() {
           }
 
           try {
-            const profileResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-              headers: { Authorization: `Bearer ${response.access_token}` },
-            });
-
-            if (!profileResponse.ok) {
-              throw new Error('Could not read Google account profile.');
-            }
-
-            const profile = await profileResponse.json() as {
-              sub?: string;
-              name?: string;
-              email?: string;
-              picture?: string;
-            };
+            const profile = await fetchGoogleProfile(response.access_token);
 
             const googleUser = {
-              id: profile.sub ? `google-${profile.sub}` : `google-admin-${Date.now()}`,
-              name: profile.name || profile.email?.split('@')[0] || 'Google Admin',
+              id: profile.id,
+              name: profile.name,
               email: profile.email,
-              photo: profile.picture,
+              photo: profile.photo,
               provider: 'google' as const,
               role: 'admin',
             };
 
+            // Remember a working Client ID for next time.
+            setGoogleClientId(clientId);
             setCurrentUser(googleUser);
 
             try {
@@ -142,17 +119,22 @@ export default function LoginPage() {
             }
 
             setGoogleLoading(false);
+            setShowClientIdSetup(false);
             router.push('/');
           } catch (profileError) {
             console.error('Google profile error:', profileError);
-            setError('Google account permission received, but profile could not be loaded.');
+            setError(
+              profileError instanceof Error
+                ? profileError.message
+                : 'Google permission received, but profile could not be loaded.'
+            );
             setGoogleLoading(false);
           }
         },
       });
 
       if (!tokenClient) {
-        throw new Error('Google sign-in could not initialize.');
+        throw new Error('Google sign-in could not initialize. Please try again.');
       }
 
       tokenClient.requestAccessToken({ prompt: 'consent select_account' });
@@ -161,6 +143,17 @@ export default function LoginPage() {
       setError(googleError instanceof Error ? googleError.message : 'Google sign-in failed.');
       setGoogleLoading(false);
     }
+  };
+
+  const handleSaveClientId = () => {
+    const value = clientIdInput.trim();
+    if (!value.includes('.apps.googleusercontent.com')) {
+      setError('That does not look like a Google Client ID (it should end with .apps.googleusercontent.com).');
+      return;
+    }
+    setGoogleClientId(value);
+    setShowClientIdSetup(false);
+    void handleGoogleSignIn(value);
   };
 
   // Guest Direct Login
@@ -365,7 +358,7 @@ export default function LoginPage() {
               {/* Google Sign In Button */}
               <button
                 type="button"
-                onClick={handleGoogleSignIn}
+                onClick={() => handleGoogleSignIn()}
                 disabled={googleLoading}
                 className="w-full py-3 px-4 rounded-xl border border-purple-400/30 bg-[#251543] hover:bg-[#2f1b54] text-white font-bold text-xs tracking-wide transition-all duration-200 flex items-center justify-center gap-3 shadow-md hover:shadow-purple-900/40 hover:border-purple-400/60 disabled:opacity-50"
               >
@@ -412,6 +405,42 @@ export default function LoginPage() {
                   </>
                 )}
               </button>
+
+              {/* One-time Google Client ID setup (needed because an installed APK
+                  has no build-time environment variables). */}
+              {showClientIdSetup && (
+                <div className="rounded-xl border border-purple-400/40 bg-[#1d1136] p-3 space-y-2">
+                  <p className="text-[11px] text-purple-200 font-semibold">
+                    Paste your Google OAuth Client ID (one time only)
+                  </p>
+                  <input
+                    type="text"
+                    value={clientIdInput}
+                    onChange={(e) => setClientIdInput(e.target.value)}
+                    placeholder="xxxxx.apps.googleusercontent.com"
+                    className="w-full bg-[#110724] border border-purple-500/30 focus:border-purple-400 rounded-lg px-3 py-2 text-[11px] text-white placeholder-purple-300/30 focus:outline-none"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveClientId}
+                      className="flex-1 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-bold"
+                    >
+                      Save &amp; Continue
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowClientIdSetup(false)}
+                      className="px-3 py-2 rounded-lg border border-purple-500/40 text-purple-200 text-[11px] font-bold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-purple-300/60 leading-snug">
+                    Google Cloud Console → Credentials → OAuth client (Web). Saved on this device only.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="relative flex items-center justify-center my-5">

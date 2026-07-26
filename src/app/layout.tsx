@@ -18,7 +18,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  minimumScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
   themeColor: "#3b0764",
 };
 
@@ -34,7 +37,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="apple-touch-icon" href="/Edupro_icon.jpg" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+        <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
       </head>
       <body className="bg-slate-100 text-slate-900 antialiased selection:bg-purple-500 selection:text-white">
         <PwaRegister />

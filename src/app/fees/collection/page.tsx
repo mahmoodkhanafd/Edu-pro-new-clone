@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
+import { printElement } from '@/utils/pdf';
 import Layout from '@/components/Layout';
 import { useStore } from '@/store';
 import { useSearchParams } from 'next/navigation';
@@ -202,6 +203,26 @@ function FeeCollectionContent() {
   // Get receipt data
   const receiptData = showReceipt ? feePayments.find(p => p.receiptNo === showReceipt) : null;
   const receiptStudent = receiptData ? students.find(s => s.id === receiptData.studentId) : null;
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [printingReceipt, setPrintingReceipt] = useState(false);
+
+  // Print exactly one copy of the receipt (the old window.print() rendered it twice).
+  const handlePrintReceipt = async () => {
+    if (!receiptRef.current) return;
+    setPrintingReceipt(true);
+    try {
+      await printElement(
+        receiptRef.current,
+        `Fee-Receipt-${receiptData?.receiptNo || ''}`,
+        { orientation: 'portrait', scale: 2 }
+      );
+    } catch (error) {
+      console.error('Receipt print failed:', error);
+      alert('Print failed. Please try again.');
+    } finally {
+      setPrintingReceipt(false);
+    }
+  };
 
   if (!mounted) {
     return (
@@ -544,7 +565,7 @@ function FeeCollectionContent() {
             className="modal-content w-full max-w-2xl p-0"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-8 print-content" id="receipt">
+            <div ref={receiptRef} className="p-8 bg-white" id="receipt">
               <div className="text-center border-b pb-4 mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">{settings.schoolName}</h1>
                 {settings.schoolSlogan && (
@@ -645,11 +666,21 @@ function FeeCollectionContent() {
 
             <div className="flex gap-3 p-4 bg-gray-50 no-print">
               <button
-                onClick={() => window.print()}
+                onClick={handlePrintReceipt}
+                disabled={printingReceipt}
                 className="btn-primary flex-1 flex items-center justify-center gap-2"
               >
-                <Printer className="w-5 h-5" />
-                Print Receipt
+                {printingReceipt ? (
+                  <>
+                    <div className="spinner w-4 h-4 border-white"></div>
+                    Preparing...
+                  </>
+                ) : (
+                  <>
+                    <Printer className="w-5 h-5" />
+                    Print Receipt
+                  </>
+                )}
               </button>
               <button
                 onClick={() => setShowReceipt(null)}

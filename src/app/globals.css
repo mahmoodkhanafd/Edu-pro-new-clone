@@ -358,6 +358,29 @@ html.dark body {
   background: linear-gradient(90deg, #8b5cf6, #a78bfa);
 }
 
+/* ==========================================
+   MOBILE VIEWPORT LOCK
+   Fixed-width previews (A4 sheets, ID cards) used to push the document wider
+   than the screen, which made Android/Chrome zoom out into "desktop view".
+   Locking the horizontal overflow keeps the app in true mobile view while the
+   preview itself stays scrollable inside its own container.
+   ========================================== */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* A4 / card previews scroll inside their wrapper instead of stretching the page. */
+.preview-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Modal */
 .modal-overlay {
   position: fixed;
@@ -369,15 +392,17 @@ html.dark body {
   justify-content: center;
   z-index: 50;
   animation: fadeIn 0.2s ease;
+  padding: 8px;
+  overflow: auto;
 }
 
 .modal-content {
   background: white;
   border-radius: 16px;
   box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-  max-width: 90vw;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-width: min(90vw, 100%);
+  max-height: 92vh;
+  overflow: auto;
   animation: slideUp 0.3s ease;
 }
 
