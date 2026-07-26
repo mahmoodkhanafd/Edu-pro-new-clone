@@ -319,7 +319,7 @@ export default function FeeRecordsPage() {
               className="modal-content w-full max-w-2xl p-0"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-8" id="receipt-print">
+              <div className="p-8 print-content" id="receipt-print">
                 <div className="text-center border-b pb-4 mb-6">
                   <h1 className="text-2xl font-bold text-gray-800">{settings.schoolName}</h1>
                   {settings.schoolSlogan && (
@@ -363,11 +363,25 @@ export default function FeeRecordsPage() {
                 </div>
 
                 <div className="border-t border-b py-4 mb-6">
-                  <div className="flex justify-between items-center text-xl">
+                  <div className="flex justify-between items-center text-xl mb-3">
                     <span className="font-semibold">Amount Paid</span>
                     <span className="font-bold text-green-600">
                       Rs. {Number(receiptData.amount).toLocaleString()}
                     </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 bg-gray-50 rounded-lg p-3 text-sm">
+                    <div>
+                      <p className="text-orange-600">Current Month Dues</p>
+                      <p className="font-semibold">Rs. {getStudentDues(receiptStudent.id).currentMonthDues.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-red-600">Previous Dues</p>
+                      <p className="font-semibold">Rs. {getStudentDues(receiptStudent.id).previousDues.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-800 font-semibold">Total Dues</p>
+                      <p className="font-bold">Rs. {getStudentDues(receiptStudent.id).totalDues.toLocaleString()}</p>
+                    </div>
                   </div>
                   {receiptData.remarks && (
                     <p className="text-sm text-gray-500 mt-2">
@@ -388,7 +402,7 @@ export default function FeeRecordsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-3 p-4 bg-gray-50">
+              <div className="flex gap-3 p-4 bg-gray-50 no-print">
                 <button
                   onClick={() => window.print()}
                   className="btn-primary flex-1 flex items-center justify-center gap-2"

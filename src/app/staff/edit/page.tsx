@@ -2,20 +2,24 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useStore } from '@/store';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Save, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function EditStaffPage() {
   const router = useRouter();
-  const params = useParams();
-  const staffId = params.id as string;
+  const [staffId, setStaffId] = useState('');
   const { staff, updateStaff } = useStore();
   const [mounted, setMounted] = useState(false);
   const [form, setForm] = useState({ name:'', email:'', phone:'', gender:'', designation:'', department:'', qualification:'', salary:'', address:'', isTeacher:true });
 
   useEffect(() => {
+    setStaffId(new URLSearchParams(window.location.search).get('id') || '');
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!staffId) return;
     const s = staff.find(s => s.id === staffId);
     if (s) setForm({ name:s.name||'', email:s.email||'', phone:s.phone||'', gender:s.gender||'', designation:s.designation||'', department:s.department||'', qualification:s.qualification||'', salary:String(s.salary||''), address:s.address||'', isTeacher:s.isTeacher });
   }, [staffId, staff]);
@@ -26,7 +30,7 @@ export default function EditStaffPage() {
     router.push('/staff');
   };
 
-  if (!mounted) return <Layout><div className="flex items-center justify-center min-h-[60vh]"><div className="spinner"></div></div></Layout>;
+  if (!mounted || !staffId) return <Layout><div className="flex items-center justify-center min-h-[60vh]"><div className="spinner"></div></div></Layout>;
   if (!staff.find(s => s.id === staffId)) return <Layout><div className="text-center py-12"><h2 className="text-xl font-bold">Staff Not Found</h2><Link href="/staff" className="text-blue-600 hover:underline">Back</Link></div></Layout>;
 
   return (

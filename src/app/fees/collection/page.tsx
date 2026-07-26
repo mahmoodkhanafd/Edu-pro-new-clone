@@ -609,7 +609,7 @@ function FeeCollectionContent() {
 
               <div className="bg-gray-100 p-4 rounded-lg mb-6">
                 <p className="text-sm text-gray-500 mb-2">Balance After Payment</p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-orange-600">Current Month Balance</p>
                     <p className="font-semibold text-lg">
@@ -620,6 +620,12 @@ function FeeCollectionContent() {
                     <p className="text-sm text-red-600">Previous Arrears</p>
                     <p className="font-semibold text-lg">
                       Rs. {getStudentDues(receiptStudent.id).previousDues.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-800 font-semibold">Total Dues</p>
+                    <p className="font-bold text-lg text-gray-900">
+                      Rs. {getStudentDues(receiptStudent.id).totalDues.toLocaleString()}
                     </p>
                   </div>
                 </div>

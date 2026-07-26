@@ -145,7 +145,7 @@ export default function StaffPage() {
                   </span>
                   <div className="flex gap-1">
                     <Link
-                      href={`/staff/edit/${member.id}`}
+                      href={`/staff/edit?id=${member.id}`}
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <Edit2 className="w-4 h-4 text-blue-500" />

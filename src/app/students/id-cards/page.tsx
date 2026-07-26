@@ -13,6 +13,7 @@ import {
   CheckSquare,
   Square,
 } from 'lucide-react';
+import { createA4Pdf, elementToCanvas } from '@/utils/pdf';
 
 export default function IdCardsPage() {
   const { students, classes, settings, activeSession } = useStore();
@@ -24,6 +25,7 @@ export default function IdCardsPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [generating, setGenerating] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -64,22 +66,19 @@ export default function IdCardsPage() {
   };
 
   const handleExportPDF = async () => {
-    if (!printRef.current || selectedStudentData.length === 0) return;
+    const sourceElement = printRef.current || exportRef.current;
+    if (!sourceElement || selectedStudentData.length === 0) return;
     
     setGenerating(true);
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const jsPDFModule = await import('jspdf');
-      const jsPDF = jsPDFModule.default;
-      
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = await createA4Pdf('p');
       const cardWidth = 85.6;
       const cardHeight = 54;
       const margin = 10;
       const cardsPerRow = 2;
       const cardsPerPage = 8;
       
-      const cardElements = printRef.current.querySelectorAll('.id-card-item');
+      const cardElements = sourceElement.querySelectorAll('.id-card-item');
       
       for (let i = 0; i < cardElements.length; i++) {
         if (i > 0 && i % cardsPerPage === 0) {
@@ -93,11 +92,7 @@ export default function IdCardsPage() {
         const x = margin + col * (cardWidth + 5);
         const y = margin + row * (cardHeight + 5);
         
-        const canvas = await html2canvas(cardElements[i] as HTMLElement, {
-          scale: 3,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-        });
+        const canvas = await elementToCanvas(cardElements[i] as HTMLElement, 3);
         
         const imgData = canvas.toDataURL('image/png');
         pdf.addImage(imgData, 'PNG', x, y, cardWidth, cardHeight);
@@ -325,9 +320,36 @@ export default function IdCardsPage() {
           </div>
         </div>
 
+        {/* Hidden export source so the top Export PDF button works even before opening preview */}
+        {selectedStudentData.length > 0 && !showPreview && (
+          <div className="fixed -left-[10000px] top-0 bg-white pointer-events-none" aria-hidden="true">
+            <div ref={exportRef} className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-white">
+              {selectedStudentData.map((student) => (
+                <div key={student.id} className="id-card-item flex flex-col items-center justify-center p-2 border rounded-lg bg-gray-50">
+                  <ProfessionalIDCard
+                    student={student}
+                    template={cardTemplate}
+                    className={getClassName(student.classId)}
+                    schoolName={settings.schoolName}
+                    schoolSlogan={settings.schoolSlogan}
+                    schoolLogo={settings.schoolLogo}
+                    principalSignature={settings.principalSignature}
+                    schoolAddress={settings.schoolAddress}
+                    schoolPhone={settings.schoolPhone}
+                    schoolEmail={settings.schoolEmail}
+                    session={activeSession?.name}
+                    sideView={cardSideView}
+                    fullSize
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Print Preview Modal */}
         {showPreview && (
-          <div className="modal-overlay no-print" onClick={() => setShowPreview(false)}>
+          <div className="modal-overlay print-modal" onClick={() => setShowPreview(false)}>
             <div
               className="modal-content w-full max-w-6xl p-6 max-h-[95vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
@@ -448,6 +470,17 @@ function ProfessionalIDCard({
   const style = templates[template] || templates.professional;
   const width = fullSize ? '340px' : '280px';
   const height = fullSize ? '215px' : '177px';
+  const displaySchoolName = schoolName || 'SCHOOL NAME';
+  const frontSchoolFontSize = displaySchoolName.length > 50
+    ? (fullSize ? '8px' : '6.5px')
+    : displaySchoolName.length > 36
+      ? (fullSize ? '9.5px' : '7.5px')
+      : (fullSize ? '13px' : '10px');
+  const backSchoolFontSize = displaySchoolName.length > 50
+    ? (fullSize ? '8px' : '6.5px')
+    : displaySchoolName.length > 36
+      ? (fullSize ? '9px' : '7px')
+      : (fullSize ? '11px' : '9px');
 
   // Front Side Component
   const FrontSide = (
@@ -479,11 +512,11 @@ function ProfessionalIDCard({
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 
-              className="font-bold leading-tight truncate uppercase tracking-tight"
-              style={{ fontSize: fullSize ? '13px' : '10px' }}
+            <h1
+              className="font-bold leading-tight uppercase tracking-tight break-words"
+              style={{ fontSize: frontSchoolFontSize, lineHeight: 1.05 }}
             >
-              {schoolName || 'SCHOOL NAME'}
+              {displaySchoolName}
             </h1>
             {schoolSlogan && (
               <p 
@@ -623,8 +656,8 @@ function ProfessionalIDCard({
               <img src={schoolLogo} alt="Logo" className="w-full h-full object-contain" />
             </div>
           )}
-          <h2 className="font-bold text-white truncate" style={{ fontSize: fullSize ? '11px' : '9px' }}>
-            {schoolName || 'SCHOOL NAME'}
+          <h2 className="font-bold text-white break-words leading-tight" style={{ fontSize: backSchoolFontSize, lineHeight: 1.05 }}>
+            {displaySchoolName}
           </h2>
         </div>
         <span className="bg-white/20 text-white font-bold px-1.5 py-0.5 rounded text-[6px]" style={{ fontSize: fullSize ? '7px' : '5.5px' }}>
@@ -639,8 +672,8 @@ function ProfessionalIDCard({
           <p className="font-bold text-red-700 uppercase tracking-wider" style={{ fontSize: fullSize ? '7.5px' : '6px' }}>
             IF FOUND, PLEASE RETURN TO:
           </p>
-          <p className="font-bold text-gray-800 truncate" style={{ fontSize: fullSize ? '9px' : '7.5px' }}>
-            {schoolName || 'School Administration Office'}
+          <p className="font-bold text-gray-800 break-words" style={{ fontSize: fullSize ? '9px' : '7.5px', lineHeight: 1.05 }}>
+            {displaySchoolName || 'School Administration Office'}
           </p>
           {schoolAddress ? (
             <p className="text-gray-600 line-clamp-2" style={{ fontSize: fullSize ? '7.5px' : '6px' }}>

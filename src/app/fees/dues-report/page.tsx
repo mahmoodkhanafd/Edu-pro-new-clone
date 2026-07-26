@@ -84,8 +84,8 @@ export default function DuesReportPage() {
     setGenerating(true);
     try {
       const jsPDFModule = await import('jspdf');
-      const jsPDF = jsPDFModule.default;
-      const pdf = new jsPDF('l', 'mm', 'a4');
+      const JsPDF = ((jsPDFModule as any).jsPDF || jsPDFModule.default) as typeof jsPDFModule.default;
+      const pdf = new JsPDF('l', 'mm', 'a4');
       const pw = pdf.internal.pageSize.getWidth();
 
       // Title

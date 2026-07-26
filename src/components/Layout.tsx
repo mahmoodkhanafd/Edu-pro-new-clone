@@ -131,6 +131,13 @@ export default function Layout({ children }: LayoutProps) {
 
   useEffect(() => {
     setMounted(true);
+
+    // On phones/tablets keep the mobile layout closed by default. A persisted desktop
+    // sidebar state should not force the app into a desktop-like preview on mobile.
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+
     if (!currentUser && pathname !== '/login') {
       router.push('/login');
     }
@@ -273,8 +280,12 @@ export default function Layout({ children }: LayoutProps) {
           {/* User Info */}
           <div className="p-4 border-t border-white/10">
             <div className={`flex items-center gap-3 ${!sidebarOpen && 'lg:justify-center'}`}>
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold">
-                {currentUser?.name.charAt(0) || 'A'}
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold overflow-hidden">
+                {currentUser?.photo ? (
+                  <img src={currentUser.photo} alt={currentUser.name} className="w-full h-full object-cover" />
+                ) : (
+                  currentUser?.name.charAt(0) || 'A'
+                )}
               </div>
               <div className={!sidebarOpen ? 'lg:hidden' : ''}>
                 <p className="text-white font-medium text-sm">{currentUser?.name || 'Admin'}</p>

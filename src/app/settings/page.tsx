@@ -34,7 +34,13 @@ export default function SettingsPage() {
       schoolPhone: settings.schoolPhone || '',
       schoolEmail: settings.schoolEmail || '',
     });
-  }, [settings]);
+  }, [
+    settings.schoolName,
+    settings.schoolSlogan,
+    settings.schoolAddress,
+    settings.schoolPhone,
+    settings.schoolEmail,
+  ]);
 
   const handleSave = () => {
     updateSettings({
@@ -193,7 +199,7 @@ export default function SettingsPage() {
                         if (file) {
                           const reader = new FileReader();
                           reader.onload = (event) => {
-                            updateSettings({ schoolLogo: event.target?.result as string });
+                            updateSettings({ ...formData, schoolLogo: event.target?.result as string });
                           };
                           reader.readAsDataURL(file);
                         }
@@ -203,7 +209,7 @@ export default function SettingsPage() {
                   {settings.schoolLogo && (
                     <button
                       type="button"
-                      onClick={() => updateSettings({ schoolLogo: '' })}
+                      onClick={() => updateSettings({ ...formData, schoolLogo: '' })}
                       className="text-xs text-red-600 hover:underline block"
                     >
                       Remove Logo
@@ -244,7 +250,7 @@ export default function SettingsPage() {
                         if (file) {
                           const reader = new FileReader();
                           reader.onload = (event) => {
-                            updateSettings({ principalSignature: event.target?.result as string });
+                            updateSettings({ ...formData, principalSignature: event.target?.result as string });
                           };
                           reader.readAsDataURL(file);
                         }
@@ -254,7 +260,7 @@ export default function SettingsPage() {
                   {settings.principalSignature && (
                     <button
                       type="button"
-                      onClick={() => updateSettings({ principalSignature: '' })}
+                      onClick={() => updateSettings({ ...formData, principalSignature: '' })}
                       className="text-xs text-red-600 hover:underline block"
                     >
                       Remove Signature

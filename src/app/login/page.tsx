@@ -3,6 +3,22 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        oauth2?: {
+          initTokenClient: (config: {
+            client_id: string;
+            scope: string;
+            callback: (response: { access_token?: string; error?: string; error_description?: string }) => void;
+          }) => { requestAccessToken: (options?: { prompt?: string }) => void };
+        };
+      };
+    };
+  }
+}
+
 import {
   Lock,
   User,
@@ -19,7 +35,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { setCurrentUser, settings, currentUser } = useStore();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+  const [activeTab, setActiveTab] = useState<'login' | 'signup' | null>(null);
 
   // Form State
   const [name, setName] = useState('');
@@ -38,20 +54,97 @@ export default function LoginPage() {
     }
   }, [currentUser, router]);
 
-  // Google Instant Sign In (No OTP required)
-  const handleGoogleSignIn = () => {
+  const loadGoogleIdentityScript = () => {
+    return new Promise<void>((resolve, reject) => {
+      if (window.google?.accounts?.oauth2) {
+        resolve();
+        return;
+      }
+
+      const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(), { once: true });
+        existingScript.addEventListener('error', () => reject(new Error('Google sign-in script failed to load')), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Google sign-in script failed to load'));
+      document.head.appendChild(script);
+    });
+  };
+
+  // Real Google permission popup through Google Identity Services.
+  const handleGoogleSignIn = async () => {
     setError('');
     setGoogleLoading(true);
 
-    setTimeout(() => {
-      setCurrentUser({
-        id: 'google-admin-' + Date.now(),
-        name: 'Admin User (Google)',
-        role: 'admin',
+    try {
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        throw new Error('Google Client ID is missing. Set NEXT_PUBLIC_GOOGLE_CLIENT_ID to enable real Google sign-in.');
+      }
+
+      await loadGoogleIdentityScript();
+
+      const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
+        client_id: clientId,
+        scope: 'openid email profile',
+        callback: async (response) => {
+          if (response.error || !response.access_token) {
+            setError(response.error_description || 'Google permission was cancelled or failed.');
+            setGoogleLoading(false);
+            return;
+          }
+
+          try {
+            const profileResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: `Bearer ${response.access_token}` },
+            });
+
+            if (!profileResponse.ok) {
+              throw new Error('Could not read Google account profile.');
+            }
+
+            const profile = await profileResponse.json() as {
+              sub?: string;
+              name?: string;
+              email?: string;
+              picture?: string;
+            };
+
+            setCurrentUser({
+              id: profile.sub ? `google-${profile.sub}` : `google-admin-${Date.now()}`,
+              name: profile.name || profile.email?.split('@')[0] || 'Google Admin',
+              email: profile.email,
+              photo: profile.picture,
+              provider: 'google',
+              role: 'admin',
+            });
+            setGoogleLoading(false);
+            router.push('/');
+          } catch (profileError) {
+            console.error('Google profile error:', profileError);
+            setError('Google account permission received, but profile could not be loaded.');
+            setGoogleLoading(false);
+          }
+        },
       });
+
+      if (!tokenClient) {
+        throw new Error('Google sign-in could not initialize.');
+      }
+
+      tokenClient.requestAccessToken({ prompt: 'consent select_account' });
+    } catch (googleError) {
+      console.error('Google sign-in error:', googleError);
+      setError(googleError instanceof Error ? googleError.message : 'Google sign-in failed.');
       setGoogleLoading(false);
-      router.push('/');
-    }, 400);
+    }
   };
 
   // Guest Direct Login
@@ -64,6 +157,7 @@ export default function LoginPage() {
         id: 'guest-admin',
         name: 'Guest Admin',
         role: 'admin',
+        provider: 'guest',
       });
       setGuestLoading(false);
       router.push('/');
@@ -74,6 +168,12 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!activeTab) {
+      setError('Please select Admin Sign In or Sign Up first.');
+      return;
+    }
+
     setLoading(true);
 
     setTimeout(() => {
@@ -83,10 +183,22 @@ export default function LoginPage() {
           setLoading(false);
           return;
         }
+        if (!emailOrUsername.includes('@')) {
+          setError('Please enter a valid email address');
+          setLoading(false);
+          return;
+        }
+        if (password.length < 4) {
+          setError('Password must be at least 4 characters');
+          setLoading(false);
+          return;
+        }
         setCurrentUser({
           id: 'admin-' + Date.now(),
           name: name.trim(),
+          email: emailOrUsername.trim(),
           role: 'admin',
+          provider: 'credentials',
         });
         setLoading(false);
         router.push('/');
@@ -98,20 +210,20 @@ export default function LoginPage() {
         ];
 
         const user = validUsers.find(
-          u => (u.username.toLowerCase() === emailOrUsername.toLowerCase() || emailOrUsername.toLowerCase().includes('admin')) &&
-               (u.password === password || password === 'admin123' || password.length >= 4)
+          u => u.username.toLowerCase() === emailOrUsername.trim().toLowerCase() && u.password === password
         );
 
-        if (user || emailOrUsername.length > 0) {
+        if (user) {
           setCurrentUser({
-            id: 'admin-' + Date.now(),
-            name: user ? user.name : emailOrUsername.split('@')[0] || 'Administrator',
-            role: user ? user.role : 'admin',
+            id: `${user.username}-${Date.now()}`,
+            name: user.name,
+            role: user.role,
+            provider: 'credentials',
           });
           setLoading(false);
           router.push('/');
         } else {
-          setError('Invalid login credentials. Use admin / admin123 or click Guest Login');
+          setError('Invalid login credentials. Use exact admin / admin123 or create a Sign Up account.');
           setLoading(false);
         }
       }
@@ -221,12 +333,14 @@ export default function LoginPage() {
 
             <div className="text-center mb-6">
               <h3 className="text-2xl font-black text-white tracking-tight">
-                {activeTab === 'login' ? 'Admin Authentication' : 'Create Admin Account'}
+                {activeTab === 'login' ? 'Admin Authentication' : activeTab === 'signup' ? 'Create Admin Account' : 'Choose Login Method'}
               </h3>
               <p className="text-xs text-purple-300/70 mt-1 font-medium">
                 {activeTab === 'login'
-                  ? 'Access full school management suite instantly'
-                  : 'Register administrator account without OTP verification'}
+                  ? 'Enter your admin credentials'
+                  : activeTab === 'signup'
+                    ? 'Register administrator account manually'
+                    : 'Select Google, Guest, Admin Sign In, or Sign Up to continue'}
               </p>
             </div>
 
@@ -261,7 +375,7 @@ export default function LoginPage() {
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
                       />
                     </svg>
-                    <span>Sign in with Google (No OTP Required)</span>
+                    <span>Continue with Google Account</span>
                   </>
                 )}
               </button>
@@ -278,7 +392,7 @@ export default function LoginPage() {
                 ) : (
                   <>
                     <Zap className="w-4 h-4 text-amber-300 animate-bounce" />
-                    <span>Direct Guest Login (Instant Full Access)</span>
+                    <span>Guest Login (Manual Choice)</span>
                   </>
                 )}
               </button>
@@ -300,6 +414,7 @@ export default function LoginPage() {
             )}
 
             {/* Credentials Form */}
+            {activeTab ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               {activeTab === 'signup' && (
                 <div>
@@ -376,14 +491,21 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+            ) : (
+              <div className="rounded-2xl border border-purple-500/20 bg-purple-950/30 p-4 text-center text-xs text-purple-200">
+                No option is selected by default, so the app will not auto sign up or auto login. Please choose a method above.
+              </div>
+            )}
 
             {/* Default Admin Info Box */}
-            <div className="mt-5 pt-4 border-t border-purple-500/20 flex items-center justify-between text-[11px] text-purple-300/60">
-              <span>Default Credentials:</span>
-              <span className="font-mono font-bold text-purple-200 bg-purple-900/40 px-2 py-0.5 rounded border border-purple-500/30">
-                admin / admin123
-              </span>
-            </div>
+            {activeTab === 'login' && (
+              <div className="mt-5 pt-4 border-t border-purple-500/20 flex items-center justify-between text-[11px] text-purple-300/60">
+                <span>Default Credentials:</span>
+                <span className="font-mono font-bold text-purple-200 bg-purple-900/40 px-2 py-0.5 rounded border border-purple-500/30">
+                  admin / admin123
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
