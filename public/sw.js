@@ -1,9 +1,11 @@
-const CACHE_NAME = 'edupro-shell-v1';
-const APP_SHELL = ['/manifest.json', '/icon-192.png', '/icon-512.png'];
+const CACHE_NAME = 'edupro-offline-v2';
+const OFFLINE_FALLBACK = '/offline.html';
+const APP_SHELL = [OFFLINE_FALLBACK, '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(APP_SHELL))
       .then(() => self.skipWaiting())
   );
 });
@@ -16,20 +18,44 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  // Network-first keeps pages and data current while still providing a useful
-  // offline shell when the network is unavailable.
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) return;
+
+  // Navigation fallback: serve the requested page from the network first,
+  // then a cached page, and finally the explicit offline page.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match(OFFLINE_FALLBACK)))
+    );
+    return;
+  }
+
+  // Stale-while-revalidate for same-origin assets and previously visited pages.
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response.ok && new URL(event.request.url).origin === self.location.origin) {
+    caches.match(event.request).then((cached) => {
+      const refresh = fetch(event.request).then((response) => {
+        if (response.ok) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         }
         return response;
-      })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/')))
+      }).catch(() => cached);
+      return cached || refresh;
+    })
   );
 });

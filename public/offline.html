@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#3b0764" />
+    <title>EduPro - Offline</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #12092b; color: #fff; }
+      main { max-width: 30rem; padding: 2rem; text-align: center; }
+      h1 { color: #d8b4fe; }
+      p { color: #c4b5fd; line-height: 1.6; }
+      button { border: 0; border-radius: .75rem; padding: .75rem 1.25rem; background: #7c3aed; color: #fff; font-weight: 700; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You are offline</h1>
+      <p>EduPro could not reach the network. Reconnect and try again to continue managing your school.</p>
+      <button onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
