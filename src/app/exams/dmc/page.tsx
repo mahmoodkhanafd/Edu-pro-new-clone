@@ -13,7 +13,7 @@ import {
   FileDown,
   Star,
 } from 'lucide-react';
-import { exportElementToA4Pdf } from '@/utils/pdf';
+import { exportElementToA4Pdf, printElement } from '@/utils/pdf';
 
 export default function DMCPage() {
   const {
@@ -107,8 +107,24 @@ export default function DMCPage() {
   const overallGrade = calculateGrade(overallPercentage);
   const allPassed = resultsWithGrades.length > 0 && resultsWithGrades.every(r => r.isPassed);
 
-  const handlePrint = () => {
-    window.print();
+  const [printing, setPrinting] = useState(false);
+
+  // Print only the DMC sheet (not the page behind the modal).
+  const handlePrint = async () => {
+    if (!dmcRef.current) return;
+    setPrinting(true);
+    try {
+      await printElement(
+        dmcRef.current,
+        `DMC-${studentData?.name || 'Student'}`,
+        { orientation: 'portrait', scale: 2 }
+      );
+    } catch (error) {
+      console.error('Print failed:', error);
+      alert('Print failed. Please try Export PDF instead.');
+    } finally {
+      setPrinting(false);
+    }
   };
 
   const handleExportPDF = async () => {
@@ -275,9 +291,22 @@ export default function DMCPage() {
                       </>
                     )}
                   </button>
-                  <button onClick={handlePrint} className="btn-primary flex items-center gap-2">
-                    <Printer className="w-5 h-5" />
-                    Print
+                  <button
+                    onClick={handlePrint}
+                    disabled={printing}
+                    className="btn-primary flex items-center gap-2"
+                  >
+                    {printing ? (
+                      <>
+                        <div className="spinner w-4 h-4 border-white"></div>
+                        Preparing...
+                      </>
+                    ) : (
+                      <>
+                        <Printer className="w-5 h-5" />
+                        Print
+                      </>
+                    )}
                   </button>
                   <button onClick={() => setShowDMC(false)} className="btn-secondary">
                     Close
@@ -285,10 +314,11 @@ export default function DMCPage() {
                 </div>
               </div>
 
-              {/* DMC Content */}
-              <div 
+              {/* DMC Content — always A4 (210x297mm), scrolls inside its wrapper on mobile */}
+              <div className="preview-scroll">
+              <div
                 ref={dmcRef}
-                className="bg-white p-6 print-content dmc-print-sheet"
+                className="bg-white p-6 dmc-print-sheet"
                 style={{ minHeight: '297mm', width: '210mm', margin: '0 auto' }}
               >
                 <DMCTemplate
@@ -309,6 +339,7 @@ export default function DMCPage() {
                   allPassed={allPassed}
                   gradeSettings={gradeSettings}
                 />
+              </div>
               </div>
             </div>
           </div>
@@ -384,6 +415,17 @@ function DMCTemplate({
   const colors = templates[template] || templates.elegant;
   const isBlackTemplate = template === 'black';
 
+  // Black-print template: no background fills at all, only borders + black text.
+  const headerRowStyle: React.CSSProperties = isBlackTemplate
+    ? { background: '#ffffff', borderBottom: '2px solid #000000' }
+    : { background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` };
+  const headerCellStyle: React.CSSProperties = {
+    color: isBlackTemplate ? '#000000' : '#ffffff',
+  };
+  const footerRowStyle: React.CSSProperties = isBlackTemplate
+    ? { background: '#ffffff', borderTop: '2px solid #000000' }
+    : { background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` };
+
   return (
     <div className="relative">
       {/* Decorative Border */}
@@ -432,9 +474,17 @@ function DMCTemplate({
 
           {/* Certificate Title */}
           <div className="mt-5 inline-block">
-            <div 
-              className="px-8 py-2.5 rounded-full text-white text-lg font-bold tracking-widest shadow-md"
-              style={{ background: isBlackTemplate ? '#000000' : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` }}
+            <div
+              className="px-8 py-2.5 rounded-full text-lg font-bold tracking-widest"
+              style={
+                isBlackTemplate
+                  ? { background: '#ffffff', color: '#000000', border: '2px solid #000000' }
+                  : {
+                      background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+                      color: '#ffffff',
+                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                    }
+              }
             >
               DETAILED MARKS CERTIFICATE
             </div>
@@ -444,7 +494,10 @@ function DMCTemplate({
         {/* Student Info */}
         <div
           className="rounded-xl p-5 mb-6"
-          style={{ backgroundColor: colors.accent, border: `2px solid ${colors.border}` }}
+          style={{
+            backgroundColor: isBlackTemplate ? '#ffffff' : colors.accent,
+            border: `2px solid ${colors.border}`,
+          }}
         >
           <div className="flex gap-5 items-start">
             <div
@@ -504,13 +557,13 @@ function DMCTemplate({
         <div className="mb-6 overflow-hidden rounded-xl" style={{ border: `2px solid ${colors.border}` }}>
           <table className="w-full">
             <thead>
-              <tr style={{ background: isBlackTemplate ? '#000000' : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` }}>
-                <th className="py-3 px-4 text-left text-white font-semibold text-sm">S.No</th>
-                <th className="py-3 px-4 text-left text-white font-semibold text-sm">Subject</th>
-                <th className="py-3 px-4 text-center text-white font-semibold text-sm">Total Marks</th>
-                <th className="py-3 px-4 text-center text-white font-semibold text-sm">Marks Obtained</th>
-                <th className="py-3 px-4 text-center text-white font-semibold text-sm">Grade</th>
-                <th className="py-3 px-4 text-center text-white font-semibold text-sm">Status</th>
+              <tr style={headerRowStyle}>
+                <th className="py-3 px-4 text-left font-semibold text-sm" style={headerCellStyle}>S.No</th>
+                <th className="py-3 px-4 text-left font-semibold text-sm" style={headerCellStyle}>Subject</th>
+                <th className="py-3 px-4 text-center font-semibold text-sm" style={headerCellStyle}>Total Marks</th>
+                <th className="py-3 px-4 text-center font-semibold text-sm" style={headerCellStyle}>Marks Obtained</th>
+                <th className="py-3 px-4 text-center font-semibold text-sm" style={headerCellStyle}>Grade</th>
+                <th className="py-3 px-4 text-center font-semibold text-sm" style={headerCellStyle}>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -525,7 +578,10 @@ function DMCTemplate({
                   <tr 
                     key={idx} 
                     className={idx % 2 === 0 ? 'bg-white' : ''}
-                    style={{ backgroundColor: idx % 2 !== 0 ? `${colors.accent}50` : undefined }}
+                    style={{
+                      backgroundColor:
+                        isBlackTemplate || idx % 2 === 0 ? '#ffffff' : `${colors.accent}50`,
+                    }}
                   >
                     <td className="py-3 px-4 text-center font-medium">{idx + 1}</td>
                     <td className="py-3 px-4">
@@ -537,29 +593,39 @@ function DMCTemplate({
                       {result.marksObtained}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span 
-                        className="inline-block px-3 py-1 rounded-full text-sm font-bold text-white"
-                        style={{ 
-                          background: isBlackTemplate
-                            ? '#000000'
-                            : result.grade === 'A+' || result.grade === 'A' 
-                              ? '#22c55e' 
-                              : result.grade === 'F' 
-                                ? '#ef4444' 
-                                : colors.secondary 
-                        }}
+                      <span
+                        className="inline-block px-3 py-1 rounded-full text-sm font-bold"
+                        style={
+                          isBlackTemplate
+                            ? { background: '#ffffff', color: '#000000', border: '1px solid #000000' }
+                            : {
+                                color: '#ffffff',
+                                background:
+                                  result.grade === 'A+' || result.grade === 'A'
+                                    ? '#22c55e'
+                                    : result.grade === 'F'
+                                      ? '#ef4444'
+                                      : colors.secondary,
+                              }
+                        }
                       >
                         {result.grade}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
                       {result.isPassed ? (
-                        <span className="inline-flex items-center gap-1 text-green-600 font-semibold">
+                        <span
+                          className="inline-flex items-center gap-1 font-semibold"
+                          style={{ color: isBlackTemplate ? '#000000' : '#16a34a' }}
+                        >
                           <CheckCircle className="w-4 h-4" />
                           PASS
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-red-600 font-semibold">
+                        <span
+                          className="inline-flex items-center gap-1 font-semibold"
+                          style={{ color: isBlackTemplate ? '#000000' : '#dc2626' }}
+                        >
                           <XCircle className="w-4 h-4" />
                           FAIL
                         </span>
@@ -570,18 +636,25 @@ function DMCTemplate({
               )}
             </tbody>
             <tfoot>
-              <tr style={{ background: isBlackTemplate ? '#000000' : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)` }}>
-                <td colSpan={2} className="py-3 px-4 text-right text-white font-bold">
+              <tr style={footerRowStyle}>
+                <td colSpan={2} className="py-3 px-4 text-right font-bold" style={headerCellStyle}>
                   GRAND TOTAL
                 </td>
-                <td className="py-3 px-4 text-center text-white font-bold">{totalMaxMarks}</td>
-                <td className="py-3 px-4 text-center text-white font-bold text-lg">{totalMarks}</td>
+                <td className="py-3 px-4 text-center font-bold" style={headerCellStyle}>{totalMaxMarks}</td>
+                <td className="py-3 px-4 text-center font-bold text-lg" style={headerCellStyle}>{totalMarks}</td>
                 <td className="py-3 px-4 text-center">
-                  <span className="inline-block px-3 py-1 rounded-full text-sm font-bold bg-white" style={{ color: colors.primary }}>
+                  <span
+                    className="inline-block px-3 py-1 rounded-full text-sm font-bold"
+                    style={
+                      isBlackTemplate
+                        ? { background: '#ffffff', color: '#000000', border: '1px solid #000000' }
+                        : { background: '#ffffff', color: colors.primary }
+                    }
+                  >
                     {overallGrade.grade} • {overallPercentage.toFixed(2)}%
                   </span>
                 </td>
-                <td className="py-3 px-4 text-center text-white font-bold">
+                <td className="py-3 px-4 text-center font-bold" style={headerCellStyle}>
                   {allPassed ? 'PASS' : 'FAIL'}
                 </td>
               </tr>
@@ -592,34 +665,45 @@ function DMCTemplate({
         {/* Result & Grade Scale */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Result Box */}
-          <div 
+          <div
             className="rounded-xl p-5 text-center"
-            style={{ 
-              background: isBlackTemplate ? '#000000' : allPassed 
-                ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
-                : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-              boxShadow: allPassed ? '0 4px 15px #22c55e50' : '0 4px 15px #ef444450',
-            }}
+            style={
+              isBlackTemplate
+                ? { background: '#ffffff', border: '2px solid #000000' }
+                : {
+                    background: allPassed
+                      ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+                      : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                    boxShadow: allPassed ? '0 4px 15px #22c55e50' : '0 4px 15px #ef444450',
+                  }
+            }
           >
             <div className="flex items-center justify-center gap-2 mb-2">
               {allPassed ? (
-                <Star className="w-8 h-8 text-yellow-300" fill="#fde047" />
+                <Star
+                  className="w-8 h-8"
+                  style={{ color: isBlackTemplate ? '#000000' : '#fde047' }}
+                  fill={isBlackTemplate ? 'none' : '#fde047'}
+                />
               ) : (
-                <XCircle className="w-8 h-8 text-white" />
+                <XCircle className="w-8 h-8" style={{ color: isBlackTemplate ? '#000000' : '#ffffff' }} />
               )}
             </div>
-            <p className="text-white text-3xl font-bold mb-1">
+            <p className="text-3xl font-bold mb-1" style={{ color: isBlackTemplate ? '#000000' : '#ffffff' }}>
               {allPassed ? 'PASSED' : 'FAILED'}
             </p>
-            <p className="text-white/80 text-sm">
+            <p className="text-sm" style={{ color: isBlackTemplate ? '#000000' : 'rgba(255,255,255,0.85)' }}>
               {overallGrade.remarks} • {overallPercentage.toFixed(2)}%
             </p>
           </div>
 
           {/* Grade Scale */}
-          <div 
+          <div
             className="rounded-xl p-5"
-            style={{ backgroundColor: colors.accent, border: `2px solid ${colors.border}` }}
+            style={{
+              backgroundColor: isBlackTemplate ? '#ffffff' : colors.accent,
+              border: `2px solid ${colors.border}`,
+            }}
           >
             <h4 className="font-bold mb-3" style={{ color: colors.primary }}>Grading Scale</h4>
             <div className="grid grid-cols-4 gap-2 text-xs">
@@ -637,22 +721,28 @@ function DMCTemplate({
           </div>
         </div>
 
-        {/* Principal Signature Only */}
+        {/* Principal Signature Only (controller / class-teacher blocks removed on request) */}
         <div className="flex justify-end pt-8 mt-8" style={{ borderTop: `2px dashed ${colors.border}` }}>
-          <div className="text-center w-64">
-            <div className="h-24 mb-2 flex items-end justify-center bg-white">
+          <div className="text-center" style={{ width: '300px' }}>
+            <div className="mb-2 flex items-end justify-center bg-white" style={{ height: '120px' }}>
               {principalSignature ? (
                 <img
                   src={principalSignature}
                   alt="Principal Signature"
-                  className="max-h-20 max-w-[190px] object-contain bg-white"
+                  className="object-contain bg-white"
+                  style={{ maxHeight: '112px', maxWidth: '270px' }}
                 />
               ) : (
-                <div className="w-40 border-b border-gray-400 border-dashed mb-1" />
+                <div className="w-56 border-b border-gray-400 border-dashed mb-1" />
               )}
             </div>
-            <div className="border-t-2 pt-2" style={{ borderColor: colors.primary }}>
-              <p className="font-semibold text-sm" style={{ color: colors.primary }}>Principal Signature</p>
+            <div className="border-t-2 pt-2" style={{ borderColor: isBlackTemplate ? '#000000' : colors.primary }}>
+              <p
+                className="font-semibold text-sm"
+                style={{ color: isBlackTemplate ? '#000000' : colors.primary }}
+              >
+                Principal Signature
+              </p>
             </div>
           </div>
         </div>
