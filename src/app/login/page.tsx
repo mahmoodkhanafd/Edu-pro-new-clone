@@ -70,8 +70,12 @@ export default function LoginPage() {
     const clientId = (overrideClientId || getGoogleClientId()).trim();
     if (!clientId) {
       // No build-time env in an APK, so let the user paste their own Client ID once.
+      // This is Google's own requirement: an OAuth Client ID MUST be registered for
+      // the account chooser to show up. There is no way around it on a real device.
       setShowClientIdSetup(true);
-      setError('Add your Google OAuth Client ID once to enable real Google sign-in.');
+      setError(
+        'Google sign-in needs a one-time OAuth Client ID. Paste yours below (see the GitHub Variables section in the README).'
+      );
       return;
     }
 
