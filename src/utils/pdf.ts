@@ -251,24 +251,96 @@ export async function exportElementToA4Pdf(
   return savePdf(pdf, filename, options.category || 'dmc');
 }
 
-/**
- * Reliable print for web *and* Android WebView.
- *
- * `window.print()` inside a Capacitor WebView prints the whole scrolled page
- * (the list behind the modal) instead of the receipt/DMC/ID card. Instead we
- * rasterise just the target element and hand a clean, isolated A4 document to
- * the print pipeline, so the preview always shows exactly the document.
- */
-export async function printElement(
-  element: HTMLElement,
-  title = 'EduPro Document',
-  options: { orientation?: 'portrait' | 'landscape'; scale?: number } = {}
-) {
-  const orientation = options.orientation || 'portrait';
-  const canvas = await elementToCanvas(element, options.scale || 2);
-  const dataUrl = canvas.toDataURL('image/png');
+  /**
+   * Reliable print for web *and* Android WebView.
+   *
+   * The web path uses a hidden iframe (works in every browser and avoids
+   * popup blockers). On Android, the Capacitor WebView has *no* `window.print()`
+   * implementation at all — calling it silently does nothing. We therefore
+   * detect Android, save the rendered PDF to Documents, and hand it to the
+   * native share sheet so the user can pick "Print" or "Save" from there.
+   */
+  export async function printElement(
+    element: HTMLElement,
+    title = 'EduPro Document',
+    options: { orientation?: 'portrait' | 'landscape'; scale?: number; category?: PdfCategory; filename?: string } = {}
+  ) {
+    const orientation = options.orientation || 'portrait';
 
-  const html = `<!DOCTYPE html>
+    // Android WebView cannot print inline; fall back to native share.
+    if (await isCapacitorAndroid()) {
+      const pdf = await createA4Pdf(orientation === 'landscape' ? 'l' : 'p');
+      const canvas = await elementToCanvas(element, options.scale || 2);
+      const imgData = canvas.toDataURL('image/png');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const imgWidth = pageWidth - margin * 2;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const printableHeight = pageHeight - margin * 2;
+
+      if (imgHeight <= printableHeight) {
+        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+      } else {
+        // Paginate vertically, same logic as exportElementToA4Pdf.
+        let remainingHeight = imgHeight;
+        let sourceY = 0;
+        const sourcePageHeight = (printableHeight * canvas.width) / imgWidth;
+        while (remainingHeight > 0) {
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = Math.min(sourcePageHeight, canvas.height - sourceY);
+          const ctx = pageCanvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+            ctx.drawImage(
+              canvas,
+              0,
+              sourceY,
+              canvas.width,
+              pageCanvas.height,
+              0,
+              0,
+              canvas.width,
+              pageCanvas.height
+            );
+            const pageImgData = pageCanvas.toDataURL('image/png');
+            const pageImgHeight = (pageCanvas.height * imgWidth) / pageCanvas.width;
+            if (sourceY > 0) pdf.addPage();
+            pdf.addImage(pageImgData, 'PNG', margin, margin, imgWidth, pageImgHeight);
+          }
+          sourceY += sourcePageHeight;
+          remainingHeight -= printableHeight;
+        }
+      }
+
+      const safeName = sanitizeFilename(options.filename || `${title}.pdf`);
+      const category = options.category || 'dmc';
+      const { platform, path } = await savePdf(pdf, safeName, category);
+
+      // Surface the PDF through the OS share sheet so the user can choose
+      // "Print" (Android print service), "Save to Drive", or "Open in…".
+      const { Share } = await import('@capacitor/share');
+      const { Filesystem, Directory } = await import('@capacitor/filesystem');
+      const fileUri = await Filesystem.getUri({ path, directory: Directory.Documents });
+      await Share.share({
+        title,
+        text: title,
+        url: fileUri.uri,
+        dialogTitle: 'Print or share',
+      }).catch((shareError) => {
+        console.warn('Share cancelled or unavailable:', shareError);
+      });
+
+      return { platform, path };
+    }
+
+    // Web fallback: rasterise + iframe print.
+    const canvas = await elementToCanvas(element, options.scale || 2);
+    const dataUrl = canvas.toDataURL('image/png');
+
+    const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8" />
@@ -286,47 +358,46 @@ export async function printElement(
 <body><img src="${dataUrl}" alt="${title.replace(/[<>"]/g, '')}" /></body>
 </html>`;
 
-  // Prefer a hidden iframe: it works in Android WebView and avoids popup blockers.
-  const iframe = document.createElement('iframe');
-  iframe.setAttribute('aria-hidden', 'true');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
-  iframe.style.opacity = '0';
-  document.body.appendChild(iframe);
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.opacity = '0';
+    document.body.appendChild(iframe);
 
-  await new Promise<void>((resolve) => {
-    const doc = iframe.contentWindow?.document;
-    if (!doc) {
-      resolve();
-      return;
-    }
-    doc.open();
-    doc.write(html);
-    doc.close();
-
-    const image = doc.querySelector('img');
-    const fire = () => {
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch (error) {
-        console.error('Print failed:', error);
+    await new Promise<void>((resolve) => {
+      const doc = iframe.contentWindow?.document;
+      if (!doc) {
+        resolve();
+        return;
       }
-      resolve();
-    };
+      doc.open();
+      doc.write(html);
+      doc.close();
 
-    if (image && !image.complete) {
-      image.addEventListener('load', fire, { once: true });
-      image.addEventListener('error', fire, { once: true });
-    } else {
-      setTimeout(fire, 120);
-    }
-  });
+      const image = doc.querySelector('img');
+      const fire = () => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (error) {
+          console.error('Print failed:', error);
+        }
+        resolve();
+      };
 
-  // Give the print dialog time to grab the document before cleanup.
-  setTimeout(() => iframe.remove(), 60000);
-}
+      if (image && !image.complete) {
+        image.addEventListener('load', fire, { once: true });
+        image.addEventListener('error', fire, { once: true });
+      } else {
+        setTimeout(fire, 120);
+      }
+    });
+
+    setTimeout(() => iframe.remove(), 60000);
+    return { platform: 'browser' as const, path: '' };
+  }

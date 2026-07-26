@@ -269,11 +269,11 @@ export default function DMCPage() {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Actions */}
-              <div className="flex items-center justify-between p-4 border-b no-print sticky top-0 bg-white z-10">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-b no-print sticky top-0 bg-white z-10">
                 <h2 className="text-xl font-bold text-gray-800">
                   Detailed Marks Certificate
                 </h2>
-                <div className="flex gap-3">
+                <div className="modal-actions">
                   <button
                     onClick={handleExportPDF}
                     disabled={generating}
@@ -314,12 +314,14 @@ export default function DMCPage() {
                 </div>
               </div>
 
-              {/* DMC Content — always A4 (210x297mm), scrolls inside its wrapper on mobile */}
-              <div className="preview-scroll">
+              {/* DMC Content — always A4 (210x297mm) in the DOM so the PDF capture
+                  stays at real A4 resolution; on phones the wrapper shrinks the
+                  preview visually without resizing the captured element. */}
+              <div className="dmc-preview-wrap preview-scroll">
               <div
                 ref={dmcRef}
-                className="bg-white p-6 dmc-print-sheet"
-                style={{ minHeight: '297mm', width: '210mm', margin: '0 auto' }}
+                className="bg-white p-4 dmc-print-sheet"
+                style={{ width: '210mm', minHeight: '297mm', margin: '0 auto' }}
               >
                 <DMCTemplate
                   template={dmcTemplate}
@@ -445,37 +447,37 @@ function DMCTemplate({
       <div className="absolute bottom-2 left-2 w-12 h-12" style={{ borderBottom: `4px solid ${colors.primary}`, borderLeft: `4px solid ${colors.primary}` }} />
       <div className="absolute bottom-2 right-2 w-12 h-12" style={{ borderBottom: `4px solid ${colors.primary}`, borderRight: `4px solid ${colors.primary}` }} />
 
-      <div className="relative p-8">
+      <div className="relative p-5">
         {/* Header (No Slogan as requested: "dmc mein slogan na rako") */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-3">
           {/* School Logo */}
-          <div 
-            className="w-20 h-20 mx-auto mb-3 rounded-xl flex items-center justify-center p-1 border bg-white shadow-md"
+          <div
+            className="w-16 h-16 mx-auto mb-2 rounded-xl flex items-center justify-center p-1 border bg-white shadow-md"
             style={{ borderColor: colors.border }}
           >
             {schoolLogo ? (
               <img src={schoolLogo} alt="School Logo" className="max-w-full max-h-full object-contain" />
             ) : (
-              <Building className="w-12 h-12" style={{ color: colors.primary }} />
+              <Building className="w-10 h-10" style={{ color: colors.primary }} />
             )}
           </div>
 
           {/* School Name */}
-          <h1 
-            className="text-3xl font-extrabold tracking-wide uppercase mb-1"
+          <h1
+            className="text-2xl font-extrabold tracking-wide uppercase mb-0.5"
             style={{ color: colors.primary }}
           >
             {schoolName || 'SCHOOL NAME'}
           </h1>
-          
+
           {schoolAddress && (
-            <p className="text-gray-500 text-xs">{schoolAddress}</p>
+            <p className="text-gray-500 text-[10px]">{schoolAddress}</p>
           )}
 
           {/* Certificate Title */}
-          <div className="mt-5 inline-block">
+          <div className="mt-2 inline-block">
             <div
-              className="px-8 py-2.5 rounded-full text-lg font-bold tracking-widest"
+              className="px-6 py-1.5 rounded-full text-sm font-bold tracking-widest"
               style={
                 isBlackTemplate
                   ? { background: '#ffffff', color: '#000000', border: '2px solid #000000' }
@@ -493,59 +495,59 @@ function DMCTemplate({
 
         {/* Student Info */}
         <div
-          className="rounded-xl p-5 mb-6"
+          className="rounded-xl p-3 mb-3"
           style={{
             backgroundColor: isBlackTemplate ? '#ffffff' : colors.accent,
             border: `2px solid ${colors.border}`,
           }}
         >
-          <div className="flex gap-5 items-start">
+          <div className="flex gap-3 items-start">
             <div
-              className="w-28 h-32 rounded-lg border-2 bg-white flex items-center justify-center overflow-hidden flex-shrink-0"
+              className="w-20 h-24 rounded-lg border-2 bg-white flex items-center justify-center overflow-hidden flex-shrink-0"
               style={{ borderColor: colors.border }}
             >
               {studentData.photo ? (
                 <img src={studentData.photo} alt={studentData.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="text-center text-gray-400 text-xs font-semibold">STUDENT<br />PHOTO</div>
+                <div className="text-center text-gray-400 text-[10px] font-semibold">STUDENT<br />PHOTO</div>
               )}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-1.5 flex-1">
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Student Name</p>
-                <p className="font-bold text-lg" style={{ color: colors.primary }}>{studentData.name}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Student Name</p>
+                <p className="font-bold text-sm" style={{ color: colors.primary }}>{studentData.name}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Father&apos;s Name</p>
-                <p className="font-semibold" style={{ color: colors.primary }}>{studentData.fatherName}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Father&apos;s Name</p>
+                <p className="font-semibold text-sm" style={{ color: colors.primary }}>{studentData.fatherName}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Class / Section</p>
-                <p className="font-semibold" style={{ color: colors.primary }}>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Class / Section</p>
+                <p className="font-semibold text-sm" style={{ color: colors.primary }}>
                   {classData.name} {classData.section ? `- ${classData.section}` : ''}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Roll Number</p>
-                <p className="font-semibold" style={{ color: colors.primary }}>{studentData.rollNo}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Roll Number</p>
+                <p className="font-semibold text-sm" style={{ color: colors.primary }}>{studentData.rollNo}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Examination</p>
-                <p className="font-semibold" style={{ color: colors.primary }}>{examData.name}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Examination</p>
+                <p className="font-semibold text-sm" style={{ color: colors.primary }}>{examData.name}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Session</p>
-                <p className="font-semibold" style={{ color: colors.primary }}>{session || 'N/A'}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Session</p>
+                <p className="font-semibold text-sm" style={{ color: colors.primary }}>{session || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Date of Birth</p>
-                <p className="font-semibold" style={{ color: colors.primary }}>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Date of Birth</p>
+                <p className="font-semibold text-sm" style={{ color: colors.primary }}>
                   {studentData.dob ? new Date(studentData.dob).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Date of Issue</p>
-                <p className="font-semibold" style={{ color: colors.primary }}>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide">Date of Issue</p>
+                <p className="font-semibold text-sm" style={{ color: colors.primary }}>
                   {new Date().toLocaleDateString()}
                 </p>
               </div>
@@ -554,47 +556,46 @@ function DMCTemplate({
         </div>
 
         {/* Marks Table */}
-        <div className="mb-6 overflow-hidden rounded-xl" style={{ border: `2px solid ${colors.border}` }}>
+        <div className="mb-3 overflow-hidden rounded-xl" style={{ border: `2px solid ${colors.border}` }}>
           <table className="w-full">
             <thead>
               <tr style={headerRowStyle}>
-                <th className="py-3 px-4 text-left font-semibold text-sm" style={headerCellStyle}>S.No</th>
-                <th className="py-3 px-4 text-left font-semibold text-sm" style={headerCellStyle}>Subject</th>
-                <th className="py-3 px-4 text-center font-semibold text-sm" style={headerCellStyle}>Total Marks</th>
-                <th className="py-3 px-4 text-center font-semibold text-sm" style={headerCellStyle}>Marks Obtained</th>
-                <th className="py-3 px-4 text-center font-semibold text-sm" style={headerCellStyle}>Grade</th>
-                <th className="py-3 px-4 text-center font-semibold text-sm" style={headerCellStyle}>Status</th>
+                <th className="py-1.5 px-3 text-left font-semibold text-xs" style={headerCellStyle}>S.No</th>
+                <th className="py-1.5 px-3 text-left font-semibold text-xs" style={headerCellStyle}>Subject</th>
+                <th className="py-1.5 px-3 text-center font-semibold text-xs" style={headerCellStyle}>Total</th>
+                <th className="py-1.5 px-3 text-center font-semibold text-xs" style={headerCellStyle}>Obtained</th>
+                <th className="py-1.5 px-3 text-center font-semibold text-xs" style={headerCellStyle}>Grade</th>
+                <th className="py-1.5 px-3 text-center font-semibold text-xs" style={headerCellStyle}>Status</th>
               </tr>
             </thead>
             <tbody>
               {results.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                  <td colSpan={6} className="py-6 text-center text-gray-500 text-sm">
                     No subjects found. Please add subjects for this class.
                   </td>
                 </tr>
               ) : (
                 results.map((result, idx) => (
-                  <tr 
-                    key={idx} 
+                  <tr
+                    key={idx}
                     className={idx % 2 === 0 ? 'bg-white' : ''}
                     style={{
                       backgroundColor:
                         isBlackTemplate || idx % 2 === 0 ? '#ffffff' : `${colors.accent}50`,
                     }}
                   >
-                    <td className="py-3 px-4 text-center font-medium">{idx + 1}</td>
-                    <td className="py-3 px-4">
-                      <span className="font-medium">{result.subject}</span>
-                      {result.code && <span className="text-gray-400 text-xs ml-2">({result.code})</span>}
+                    <td className="py-1.5 px-3 text-center font-medium text-sm">{idx + 1}</td>
+                    <td className="py-1.5 px-3">
+                      <span className="font-medium text-sm">{result.subject}</span>
                     </td>
-                    <td className="py-3 px-4 text-center font-medium">{result.maxMarks}</td>
-                    <td className="py-3 px-4 text-center font-bold" style={{ color: colors.primary }}>
+                    <td className="py-1.5 px-3 text-center font-medium text-sm">{result.maxMarks}</td>
+                    <td className="py-1.5 px-3 text-center font-bold text-sm" style={{ color: colors.primary }}>
                       {result.marksObtained}
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-1.5 px-3 text-center">
                       <span
-                        className="inline-block px-3 py-1 rounded-full text-sm font-bold"
+                        className="inline-block px-2 py-0.5 rounded-full text-xs font-bold"
                         style={
                           isBlackTemplate
                             ? { background: '#ffffff', color: '#000000', border: '1px solid #000000' }
@@ -612,21 +613,21 @@ function DMCTemplate({
                         {result.grade}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-1.5 px-3 text-center">
                       {result.isPassed ? (
                         <span
-                          className="inline-flex items-center gap-1 font-semibold"
+                          className="inline-flex items-center gap-1 font-semibold text-xs"
                           style={{ color: isBlackTemplate ? '#000000' : '#16a34a' }}
                         >
-                          <CheckCircle className="w-4 h-4" />
+                          <CheckCircle className="w-3.5 h-3.5" />
                           PASS
                         </span>
                       ) : (
                         <span
-                          className="inline-flex items-center gap-1 font-semibold"
+                          className="inline-flex items-center gap-1 font-semibold text-xs"
                           style={{ color: isBlackTemplate ? '#000000' : '#dc2626' }}
                         >
-                          <XCircle className="w-4 h-4" />
+                          <XCircle className="w-3.5 h-3.5" />
                           FAIL
                         </span>
                       )}
@@ -637,14 +638,14 @@ function DMCTemplate({
             </tbody>
             <tfoot>
               <tr style={footerRowStyle}>
-                <td colSpan={2} className="py-3 px-4 text-right font-bold" style={headerCellStyle}>
+                <td colSpan={2} className="py-1.5 px-3 text-right font-bold text-xs" style={headerCellStyle}>
                   GRAND TOTAL
                 </td>
-                <td className="py-3 px-4 text-center font-bold" style={headerCellStyle}>{totalMaxMarks}</td>
-                <td className="py-3 px-4 text-center font-bold text-lg" style={headerCellStyle}>{totalMarks}</td>
-                <td className="py-3 px-4 text-center">
+                <td className="py-1.5 px-3 text-center font-bold text-xs" style={headerCellStyle}>{totalMaxMarks}</td>
+                <td className="py-1.5 px-3 text-center font-bold text-sm" style={headerCellStyle}>{totalMarks}</td>
+                <td className="py-1.5 px-3 text-center">
                   <span
-                    className="inline-block px-3 py-1 rounded-full text-sm font-bold"
+                    className="inline-block px-2 py-0.5 rounded-full text-xs font-bold"
                     style={
                       isBlackTemplate
                         ? { background: '#ffffff', color: '#000000', border: '1px solid #000000' }
@@ -654,7 +655,7 @@ function DMCTemplate({
                     {overallGrade.grade} • {overallPercentage.toFixed(2)}%
                   </span>
                 </td>
-                <td className="py-3 px-4 text-center font-bold" style={headerCellStyle}>
+                <td className="py-1.5 px-3 text-center font-bold text-xs" style={headerCellStyle}>
                   {allPassed ? 'PASS' : 'FAIL'}
                 </td>
               </tr>
@@ -663,10 +664,10 @@ function DMCTemplate({
         </div>
 
         {/* Result & Grade Scale */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           {/* Result Box */}
           <div
-            className="rounded-xl p-5 text-center"
+            className="rounded-xl p-3 text-center"
             style={
               isBlackTemplate
                 ? { background: '#ffffff', border: '2px solid #000000' }
@@ -678,39 +679,39 @@ function DMCTemplate({
                   }
             }
           >
-            <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="flex items-center justify-center gap-2 mb-1">
               {allPassed ? (
                 <Star
-                  className="w-8 h-8"
+                  className="w-6 h-6"
                   style={{ color: isBlackTemplate ? '#000000' : '#fde047' }}
                   fill={isBlackTemplate ? 'none' : '#fde047'}
                 />
               ) : (
-                <XCircle className="w-8 h-8" style={{ color: isBlackTemplate ? '#000000' : '#ffffff' }} />
+                <XCircle className="w-6 h-6" style={{ color: isBlackTemplate ? '#000000' : '#ffffff' }} />
               )}
             </div>
-            <p className="text-3xl font-bold mb-1" style={{ color: isBlackTemplate ? '#000000' : '#ffffff' }}>
+            <p className="text-2xl font-bold mb-0.5" style={{ color: isBlackTemplate ? '#000000' : '#ffffff' }}>
               {allPassed ? 'PASSED' : 'FAILED'}
             </p>
-            <p className="text-sm" style={{ color: isBlackTemplate ? '#000000' : 'rgba(255,255,255,0.85)' }}>
+            <p className="text-xs" style={{ color: isBlackTemplate ? '#000000' : 'rgba(255,255,255,0.85)' }}>
               {overallGrade.remarks} • {overallPercentage.toFixed(2)}%
             </p>
           </div>
 
           {/* Grade Scale */}
           <div
-            className="rounded-xl p-5"
+            className="rounded-xl p-3"
             style={{
               backgroundColor: isBlackTemplate ? '#ffffff' : colors.accent,
               border: `2px solid ${colors.border}`,
             }}
           >
-            <h4 className="font-bold mb-3" style={{ color: colors.primary }}>Grading Scale</h4>
-            <div className="grid grid-cols-4 gap-2 text-xs">
+            <h4 className="font-bold mb-2 text-sm" style={{ color: colors.primary }}>Grading Scale</h4>
+            <div className="grid grid-cols-4 gap-1.5 text-[10px]">
               {gradeSettings.slice(0, 8).map((g) => (
-                <div 
-                  key={g.id} 
-                  className="px-2 py-1 bg-white rounded text-center"
+                <div
+                  key={g.id}
+                  className="px-1.5 py-0.5 bg-white rounded text-center"
                   style={{ border: `1px solid ${colors.border}` }}
                 >
                   <span className="font-bold" style={{ color: colors.primary }}>{g.grade}</span>
@@ -722,23 +723,23 @@ function DMCTemplate({
         </div>
 
         {/* Principal Signature Only (controller / class-teacher blocks removed on request) */}
-        <div className="flex justify-end pt-8 mt-8" style={{ borderTop: `2px dashed ${colors.border}` }}>
-          <div className="text-center" style={{ width: '300px' }}>
-            <div className="mb-2 flex items-end justify-center bg-white" style={{ height: '120px' }}>
+        <div className="flex justify-end pt-3 mt-3" style={{ borderTop: `2px dashed ${colors.border}` }}>
+          <div className="text-center" style={{ width: '240px' }}>
+            <div className="mb-1 flex items-end justify-center bg-white" style={{ height: '70px' }}>
               {principalSignature ? (
                 <img
                   src={principalSignature}
                   alt="Principal Signature"
                   className="object-contain bg-white"
-                  style={{ maxHeight: '112px', maxWidth: '270px' }}
+                  style={{ maxHeight: '64px', maxWidth: '220px' }}
                 />
               ) : (
-                <div className="w-56 border-b border-gray-400 border-dashed mb-1" />
+                <div className="w-48 border-b border-gray-400 border-dashed mb-1" />
               )}
             </div>
-            <div className="border-t-2 pt-2" style={{ borderColor: isBlackTemplate ? '#000000' : colors.primary }}>
+            <div className="border-t-2 pt-1" style={{ borderColor: isBlackTemplate ? '#000000' : colors.primary }}>
               <p
-                className="font-semibold text-sm"
+                className="font-semibold text-xs"
                 style={{ color: isBlackTemplate ? '#000000' : colors.primary }}
               >
                 Principal Signature

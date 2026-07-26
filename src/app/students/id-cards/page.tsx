@@ -69,7 +69,12 @@ export default function IdCardsPage() {
     if (!sourceElement) return;
     setPrinting(true);
     try {
-      await printElement(sourceElement, 'Student-ID-Cards', { orientation: 'portrait', scale: 2 });
+      await printElement(sourceElement, 'Student-ID-Cards', {
+        orientation: 'portrait',
+        scale: 2,
+        category: 'id-cards',
+        filename: `Double-Side-ID-Cards-${selectedClass === 'all' ? 'All-Classes' : getClassName(selectedClass)}.pdf`,
+      });
     } catch (error) {
       console.error('Print failed:', error);
       alert('Print failed. Please try Export PDF instead.');
@@ -81,7 +86,7 @@ export default function IdCardsPage() {
   const handleExportPDF = async () => {
     const sourceElement = printRef.current || exportRef.current;
     if (!sourceElement || selectedStudentData.length === 0) return;
-    
+
     setGenerating(true);
     try {
       const pdf = await createA4Pdf('p');
@@ -90,27 +95,54 @@ export default function IdCardsPage() {
       const margin = 10;
       const cardsPerRow = 2;
       const cardsPerPage = 8;
-      
-      const cardElements = sourceElement.querySelectorAll('.id-card-item');
-      
-      for (let i = 0; i < cardElements.length; i++) {
-        if (i > 0 && i % cardsPerPage === 0) {
-          pdf.addPage();
+
+      // Each id-card-item may contain BOTH a front and a back (sideView = "both").
+      // We separate them so the front goes on one page, the back on the next,
+      // instead of squashing both faces into a single 85.6×54mm slot.
+      const fronts: HTMLElement[] = [];
+      const backs: HTMLElement[] = [];
+
+      sourceElement.querySelectorAll('.id-card-item').forEach((node) => {
+        const front = node.querySelector('.id-card-face-front') as HTMLElement | null;
+        const back = node.querySelector('.id-card-face-back') as HTMLElement | null;
+        if (front) fronts.push(front);
+        if (back) backs.push(back);
+      });
+
+      const addFacePage = async (faces: HTMLElement[], heading: string) => {
+        if (faces.length === 0) return;
+
+        // Heading for the page
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.text(heading, margin, margin - 3);
+
+        for (let i = 0; i < faces.length; i++) {
+          if (i > 0 && i % cardsPerPage === 0) {
+            pdf.addPage();
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(11);
+            pdf.text(heading, margin, margin - 3);
+          }
+
+          const positionOnPage = i % cardsPerPage;
+          const row = Math.floor(positionOnPage / cardsPerRow);
+          const col = positionOnPage % cardsPerRow;
+
+          const x = margin + col * (cardWidth + 5);
+          const y = margin + row * (cardHeight + 5);
+
+          const canvas = await elementToCanvas(faces[i], 3);
+          const imgData = canvas.toDataURL('image/png');
+          pdf.addImage(imgData, 'PNG', x, y, cardWidth, cardHeight);
         }
-        
-        const positionOnPage = i % cardsPerPage;
-        const row = Math.floor(positionOnPage / cardsPerRow);
-        const col = positionOnPage % cardsPerRow;
-        
-        const x = margin + col * (cardWidth + 5);
-        const y = margin + row * (cardHeight + 5);
-        
-        const canvas = await elementToCanvas(cardElements[i] as HTMLElement, 3);
-        
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', x, y, cardWidth, cardHeight);
-      }
-      
+      };
+
+      // Front faces on the first page(s), back faces on the next.
+      await addFacePage(fronts, 'FRONT SIDE');
+      if (fronts.length > 0 && backs.length > 0) pdf.addPage();
+      await addFacePage(backs, 'BACK SIDE');
+
       await savePdf(
         pdf,
         `Double-Side-ID-Cards-${selectedClass === 'all' ? 'All-Classes' : getClassName(selectedClass)}.pdf`,
@@ -371,14 +403,14 @@ export default function IdCardsPage() {
               className="modal-content w-full max-w-6xl p-6 max-h-[95vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-6 no-print">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 no-print">
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">
                     ID Cards Preview ({selectedStudentData.length} Students)
                   </h2>
                   <p className="text-xs text-gray-500">Double-sided ID cards with return information & principal signature</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="modal-actions">
                   <button
                     onClick={handleExportPDF}
                     disabled={generating}
@@ -519,7 +551,7 @@ function ProfessionalIDCard({
   // Front Side Component
   const FrontSide = (
     <div
-      className="bg-white rounded-xl overflow-hidden shadow-xl border border-gray-300 flex flex-col justify-between relative"
+      className="id-card-face id-card-face-front bg-white rounded-xl overflow-hidden shadow-xl border border-gray-300 flex flex-col justify-between relative"
       style={{
         width,
         height,
@@ -681,7 +713,7 @@ function ProfessionalIDCard({
   // Back Side Component
   const BackSide = (
     <div
-      className="bg-white rounded-xl overflow-hidden shadow-xl border border-gray-300 flex flex-col justify-between relative"
+      className="id-card-face id-card-face-back bg-white rounded-xl overflow-hidden shadow-xl border border-gray-300 flex flex-col justify-between relative"
       style={{
         width,
         height,
