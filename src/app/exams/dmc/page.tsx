@@ -119,7 +119,7 @@ export default function DMCPage() {
       await exportElementToA4Pdf(
         dmcRef.current,
         `DMC-${studentData?.name || 'Student'}-${examData?.name || 'Exam'}.pdf`,
-        { orientation: 'p', marginMm: 6, scale: 2 }
+        { orientation: 'p', marginMm: 6, scale: 2, category: 'dmc' }
       );
     } catch (error) {
       console.error('Error generating PDF:', error);

@@ -13,7 +13,7 @@ import {
   CheckSquare,
   Square,
 } from 'lucide-react';
-import { createA4Pdf, elementToCanvas } from '@/utils/pdf';
+import { createA4Pdf, elementToCanvas, savePdf } from '@/utils/pdf';
 
 export default function IdCardsPage() {
   const { students, classes, settings, activeSession } = useStore();
@@ -98,7 +98,11 @@ export default function IdCardsPage() {
         pdf.addImage(imgData, 'PNG', x, y, cardWidth, cardHeight);
       }
       
-      pdf.save(`Double-Side-ID-Cards-${selectedClass === 'all' ? 'All-Classes' : getClassName(selectedClass)}.pdf`);
+      await savePdf(
+        pdf,
+        `Double-Side-ID-Cards-${selectedClass === 'all' ? 'All-Classes' : getClassName(selectedClass)}.pdf`,
+        'id-cards'
+      );
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Error generating PDF. Please try printing instead.');

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store';
+import { restoreOrCreateGoogleCloudBackup } from '@/utils/cloudBackup';
 declare global {
   interface Window {
     google?: {
@@ -33,7 +34,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setCurrentUser, settings, currentUser } = useStore();
+  const { setCurrentUser, settings, currentUser, exportData, importData } = useStore();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<'login' | 'signup' | null>(null);
 
@@ -117,14 +118,29 @@ export default function LoginPage() {
               picture?: string;
             };
 
-            setCurrentUser({
+            const googleUser = {
               id: profile.sub ? `google-${profile.sub}` : `google-admin-${Date.now()}`,
               name: profile.name || profile.email?.split('@')[0] || 'Google Admin',
               email: profile.email,
               photo: profile.picture,
-              provider: 'google',
+              provider: 'google' as const,
               role: 'admin',
-            });
+            };
+
+            setCurrentUser(googleUser);
+
+            try {
+              await restoreOrCreateGoogleCloudBackup({
+                user: googleUser,
+                exportData,
+                importData,
+              });
+              // Keep the signed-in Google profile after a full data restore.
+              setCurrentUser(googleUser);
+            } catch (backupError) {
+              console.warn('Google cloud restore/create failed; continuing with local data:', backupError);
+            }
+
             setGoogleLoading(false);
             router.push('/');
           } catch (profileError) {

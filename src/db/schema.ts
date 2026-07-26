@@ -225,6 +225,30 @@ export const smsLogs = pgTable('sms_logs', {
   sentAt: timestamp('sent_at').defaultNow(),
 });
 
+// Cloud backup users saved by api/cloud-backup.js for Google restore/sync.
+export const eduproCloudUsers = pgTable('edupro_cloud_users', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  googleId: text('google_id').unique(),
+  email: text('email').unique(),
+  name: text('name'),
+  photo: text('photo'),
+  role: varchar('role', { length: 50 }).default('admin'),
+  provider: varchar('provider', { length: 50 }).default('google'),
+  lastLogin: timestamp('last_login'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const eduproCloudBackups = pgTable('edupro_cloud_backups', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  backupKey: text('backup_key').notNull().unique(),
+  googleId: text('google_id'),
+  email: text('email'),
+  data: jsonb('data').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 // Users & Roles
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),

@@ -13,6 +13,7 @@ import {
   Users,
   Calendar,
 } from 'lucide-react';
+import { savePdf } from '@/utils/pdf';
 
 export default function DuesReportPage() {
   const {
@@ -167,7 +168,11 @@ export default function DuesReportPage() {
       pdf.setFontSize(7);
       pdf.text(`Generated: ${new Date().toLocaleString('en-IN')} | EduPro SMS`, pw / 2, 200, { align: 'center' });
 
-      pdf.save(`Dues-Report-${monthNames[settings.currentMonth - 1]}-${settings.currentYear}.pdf`);
+      await savePdf(
+        pdf,
+        `Dues-Report-${monthNames[settings.currentMonth - 1]}-${settings.currentYear}.pdf`,
+        'fee-reports'
+      );
     } catch (error) {
       console.error('PDF Error:', error);
       alert('Could not generate PDF. Please use Print instead.');
